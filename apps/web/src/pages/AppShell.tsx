@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import type { PageTreeNode } from '@linkbase/contracts';
@@ -7,8 +7,28 @@ import { api, jsonBody } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import i18n, { syncDocumentLang, supportedLocales, type AppLocale } from '@/i18n';
 import { changeLocale } from '@/components/LanguageSwitcher';
-import { Button } from '@/components/ui/button';
-import { SearchView, SettingsView, TrashView } from './SidebarViews';
+import {
+  Collapsible,
+  CollapsibleContent,
+} from '@/components/ui/collapsible';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +39,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SearchView, SettingsView, TrashView } from './SidebarViews';
 
 interface Me {
   user: { id: string; name: string; locale: 'zh-CN' | 'en' | null };
@@ -35,98 +56,128 @@ function findPath(tree: PageTreeNode[], id: string): PageTreeNode[] {
   return [];
 }
 
+/** 页面树行（shadcn sidebar-07 组合式：行选中、箭头折叠、hover 建子页） */
 function TreeItem({
   node,
-  depth,
   selectedId,
-  expanded,
-  onToggle,
   onSelect,
   onAddChild,
 }: {
   node: PageTreeNode;
-  depth: number;
   selectedId: string | null;
-  expanded: Set<string>;
-  onToggle: (id: string) => void;
   onSelect: (node: PageTreeNode) => void;
   onAddChild: (node: PageTreeNode) => void;
 }) {
   const { t } = useTranslation('editor');
   const { t: tw } = useTranslation('workspace');
-  const open = expanded.has(node.id);
+  const [open, setOpen] = useState(false);
   const hasChildren = node.children.length > 0;
+  const title = node.title || t('untitled');
   return (
-    <li>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => onSelect(node)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onSelect(node);
+    <Collapsible open={open} onOpenChange={setOpen} className="group/collapsible">
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          tooltip={title}
+          isActive={selectedId === node.id}
+          onClick={() => onSelect(node)}
+          className="text-[13px]"
+        >
+          <span aria-hidden>{node.icon ?? '📄'}</span>
+          <span className="truncate">{title}</span>
+          {hasChildren && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label={open ? tw('collapse') : tw('expand')}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen((o) => !o);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setOpen((o) => !o);
+                }
+              }}
+              className="ms-auto rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronRight className="size-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+            </span>
+          )}
+        </SidebarMenuButton>
+        <SidebarMenuAction showOnHover onClick={() => { setOpen(true); onAddChild(node); }} title={tw('addChildPage')}>
+          <Plus />
+        </SidebarMenuAction>
+        {hasChildren && (
+          <CollapsibleContent>
+            <SidebarMenuSub>
+              {node.children.map((child) => (
+                <TreeItem
+                  key={child.id}
+                  node={child}
+                  selectedId={selectedId}
+                  onSelect={onSelect}
+                  onAddChild={onAddChild}
+                />
+              ))}
+            </SidebarMenuSub>
+          </CollapsibleContent>
+        )}
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
+/** 侧栏右缘把手：拖拽调宽（208–480）、单击折叠、双击复位 240 */
+function SidebarResizeHandle({
+  width,
+  onWidth,
+  onDragging,
+}: {
+  width: number;
+  onWidth: (w: number) => void;
+  onDragging: (d: boolean) => void;
+}) {
+  const { toggleSidebar, setOpen, state } = useSidebar();
+  const dragged = useRef(false);
+  return (
+    <div
+      aria-hidden
+      onDoubleClick={() => onWidth(240)}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        dragged.current = false;
+        const startX = e.clientX;
+        const move = (ev: PointerEvent) => {
+          const dx = ev.clientX - startX;
+          if (!dragged.current && Math.abs(dx) > 2) {
+            dragged.current = true;
+            onDragging(true);
           }
-        }}
-        className={`group/row flex h-7 cursor-pointer items-center gap-1 rounded-md pr-1 text-sm transition-colors duration-100 select-none hover:bg-sidebar-accent ${
-          selectedId === node.id ? 'bg-sidebar-accent font-medium' : ''
-        }`}
-        style={{ paddingLeft: `${4 + depth * 14}px` }}
-      >
-        {/* 折叠箭头：有子页 hover 可见，叶子占位对齐 */}
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={open ? tw('collapse') : tw('expand')}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (hasChildren) onToggle(node.id);
-          }}
-          className={`flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-sidebar-accent ${
-            hasChildren ? 'opacity-0 group-hover/row:opacity-100' : 'opacity-0'
-          } ${open ? 'opacity-100' : ''}`}
-        >
-          <ChevronRight className={`size-3 ${open ? 'rotate-90' : ''}`} />
-        </button>
-        <span className="text-[13px] leading-none">{node.icon ?? '📄'}</span>
-        <span className="truncate">{node.title || t('untitled')}</span>
-        {/* hover 建子页（06 §5.5） */}
-        <button
-          type="button"
-          tabIndex={-1}
-          title={tw('addChildPage')}
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddChild(node);
-          }}
-          className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity duration-100 hover:bg-sidebar-accent hover:text-foreground group-hover/row:opacity-100"
-        >
-          <Plus className="size-3.5" />
-        </button>
-      </div>
-      {hasChildren && open && (
-        <ul>
-          {node.children.map((child) => (
-            <TreeItem
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              selectedId={selectedId}
-              expanded={expanded}
-              onToggle={onToggle}
-              onSelect={onSelect}
-              onAddChild={onAddChild}
-            />
-          ))}
-        </ul>
-      )}
-    </li>
+          if (dragged.current) {
+            if (state === 'collapsed' && dx > 20) setOpen(true);
+            onWidth(Math.min(480, Math.max(208, width + dx)));
+          }
+        };
+        const up = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          onDragging(false);
+          if (!dragged.current) toggleSidebar();
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+      }}
+      className="absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize hover:bg-sidebar-border/60"
+    />
   );
 }
 
 /**
- * Phase 0 壳（06 §5.4 骨架）：无全局 header，侧边栏 240px + 正文列 720px。
- * 空间头部 = 头像 + 名 + 下拉（语言/退出）；树行 hover 可建子页；底部常驻「＋ 新页面」。
+ * Phase 0 壳（06 §5.4 骨架）：shadcn sidebar-07 组合式——
+ * 头部空间下拉 / 快捷入口 + 页面树 / 底部设置与新页面；icon 折叠 + 拖拽调宽。
  */
 export function AppShell() {
   const { t } = useTranslation('workspace');
@@ -138,9 +189,18 @@ export function AppShell() {
   const [wsId, setWsId] = useState<string | null>(null);
   const [tree, setTree] = useState<PageTreeNode[]>([]);
   const [selected, setSelected] = useState<PageTreeNode | null>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'page' | 'search' | 'trash' | 'settings'>('page');
+  // 侧栏宽度可拖拽（208–480，双击复位 240），持久化 localStorage
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const n = Number(localStorage.getItem('linkbase.sidebarWidth'));
+    return n >= 208 && n <= 480 ? n : 240;
+  });
+  const [draggingSidebar, setDraggingSidebar] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('linkbase.sidebarWidth', String(sidebarWidth));
+  }, [sidebarWidth]);
 
   const user = useAuthStore((s) => s.user);
 
@@ -176,16 +236,8 @@ export function AppShell() {
         setError(err instanceof Error ? err.message : String(err));
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadTree]);
-
-  const toggleExpanded = useCallback((id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
 
   const createPage = async (parentId?: string) => {
     if (!wsId) return;
@@ -194,9 +246,6 @@ export function AppShell() {
       ...jsonBody({ title: '', ...(parentId ? { parentId } : {}) }),
     });
     await loadTree(wsId);
-    if (parentId) {
-      setExpanded((prev) => new Set(prev).add(parentId));
-    }
     setSelected(page);
   };
 
@@ -213,173 +262,181 @@ export function AppShell() {
   const currentLocale = (i18n.resolvedLanguage ?? 'zh-CN') as AppLocale;
 
   return (
-    <div className="flex h-dvh overflow-hidden">
-      <aside className="flex w-(--width-sidebar) shrink-0 flex-col bg-sidebar">
+    <SidebarProvider
+      defaultOpen={!document.cookie.includes('sidebar_state=false')}
+      style={{ '--sidebar-width': `${sidebarWidth}px` } as CSSProperties}
+      className={draggingSidebar ? '[&_div]:transition-none' : undefined}
+    >
+      <Sidebar collapsible="icon">
         {/* 空间头部（Notion：头像方块 + 名 + 下拉菜单） */}
-        <div className="p-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="group h-8 w-full justify-start gap-2 px-1.5"
-                />
-              }
-            >
-              <span className="flex size-5 shrink-0 items-center justify-center rounded bg-accent text-[11px] font-semibold text-accent-foreground">
-                {(workspaceName ?? 'L').trim().charAt(0).toUpperCase()}
-              </span>
-              <span className="truncate font-medium">{workspaceName ?? 'Linkbase'}</span>
-              <ChevronDown className="ml-auto size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-data-[popup-open]:opacity-100" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>{tc('language')}</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {supportedLocales.map((lng) => (
-                    <DropdownMenuItem
-                      key={lng}
-                      onClick={() => changeLocale(lng)}
-                      closeOnClick={false}
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded bg-sidebar-accent text-[12px] font-semibold text-sidebar-accent-foreground">
+                    {(workspaceName ?? 'L').trim().charAt(0).toUpperCase()}
+                  </span>
+                  <span className="truncate font-medium">{workspaceName ?? 'Linkbase'}</span>
+                  <ChevronDown className="ms-auto size-3.5 shrink-0 text-muted-foreground" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>{tc('language')}</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {supportedLocales.map((lng) => (
+                        <DropdownMenuItem
+                          key={lng}
+                          onClick={() => changeLocale(lng)}
+                          closeOnClick={false}
+                        >
+                          {new Intl.DisplayNames([lng], { type: 'language' }).of(lng)}
+                          {currentLocale === lng && (
+                            <span className="ms-auto text-muted-foreground">✓</span>
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={logout}>
+                    <LogOut />
+                    {tc('logout')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+
+        <SidebarContent>
+          {/* 快捷入口（06 §5.4：搜索/回收站） */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {(
+                  [
+                    ['search', Search],
+                    ['trash', Trash2],
+                  ] as const
+                ).map(([key, Icon]) => (
+                  <SidebarMenuItem key={key}>
+                    <SidebarMenuButton
+                      tooltip={t(key)}
+                      isActive={view === key}
+                      onClick={() => setView(key)}
                     >
-                      {new Intl.DisplayNames([lng], { type: 'language' }).of(lng)}
-                      {currentLocale === lng && (
-                        <span className="ml-auto text-muted-foreground">✓</span>
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={logout}>
-                <LogOut />
-                {tc('logout')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                      <Icon />
+                      <span>{t(key)}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        {/* 快捷入口（06 §5.4：搜索/收藏/回收站在树上、设置沉底） */}
-        <nav className="px-2 pb-1">
-          <ul>
-            {(
-              [
-                ['search', 'search', <Search key="s" />],
-                ['trash', 'trash', <Trash2 key="t" />],
-              ] as const
-            ).map(([key, label, icon]) => (
-              <li key={key}>
-                <button
-                  type="button"
-                  onClick={() => setView(key)}
-                  className={`flex h-7 w-full items-center gap-2 rounded-md px-1.5 text-sm transition-colors duration-100 select-none hover:bg-sidebar-accent ${
-                    view === key ? 'bg-sidebar-accent font-medium' : ''
-                  }`}
-                >
-                  {icon}
-                  <span>{t(label)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* 页面树 */}
-        <nav className="scrollbar-thin flex-1 overflow-y-auto px-2 pb-2">
-          <ul>
-            {tree.map((node) => (
-              <TreeItem
-                key={node.id}
-                node={node}
-                depth={0}
-                selectedId={selected?.id ?? null}
-                expanded={expanded}
-                onToggle={toggleExpanded}
-                onSelect={setSelected}
-                onAddChild={(n) => void createPage(n.id)}
-              />
-            ))}
-          </ul>
-        </nav>
+          {/* 页面树 */}
+          <SidebarGroup>
+            <SidebarGroupLabel>{t('pages')}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {tree.map((node) => (
+                  <TreeItem
+                    key={node.id}
+                    node={node}
+                    selectedId={selected?.id ?? null}
+                    onSelect={setSelected}
+                    onAddChild={(n) => void createPage(n.id)}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
 
         {/* 底部：设置 + 常驻「＋ 新页面」（06 §5.4/§5.5） */}
-        <div className="space-y-0.5 p-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-8 w-full justify-start gap-2 text-muted-foreground ${
-              view === 'settings' ? 'bg-sidebar-accent' : ''
-            }`}
-            onClick={() => setView('settings')}
-          >
-            <Settings />
-            {tc('settings')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-full justify-start gap-2 text-muted-foreground"
-            onClick={() => {
-              setView('page');
-              void createPage();
-            }}
-          >
-            <Plus />
-            {t('newPage')}
-          </Button>
-        </div>
-      </aside>
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip={tc('settings')}
+                isActive={view === 'settings'}
+                onClick={() => setView('settings')}
+              >
+                <Settings />
+                <span>{tc('settings')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip={t('newPage')}
+                onClick={() => {
+                  setView('page');
+                  void createPage();
+                }}
+              >
+                <Plus />
+                <span>{t('newPage')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+        <SidebarResizeHandle
+          width={sidebarWidth}
+          onWidth={setSidebarWidth}
+          onDragging={setDraggingSidebar}
+        />
+      </Sidebar>
 
-      <main className="scrollbar-thin flex-1 overflow-y-auto">
-        {view === 'search' && wsId ? (
-          <SearchView
-            wsId={wsId}
-            onOpen={(id) => {
-              const hit = findPath(tree, id).at(-1);
-              if (hit) {
-                setSelected(hit);
-                setView('page');
-              }
-            }}
-          />
-        ) : view === 'trash' && wsId ? (
-          <TrashView wsId={wsId} onChanged={() => wsId && void loadTree(wsId)} />
-        ) : view === 'settings' && me ? (
-          <SettingsView
-            name={me.user.name}
-            onSaved={(n) =>
-              setMe((m) => (m ? { ...m, user: { ...m.user, name: n } } : m))
-            }
-          />
-        ) : error ? (
-          <div className="p-8 text-sm text-destructive">{error}</div>
-        ) : selected ? (
-          <div className="mx-auto px-8 pb-24" style={{ maxWidth: 'var(--width-content)' }}>
-            {/* 面包屑（06 §5.4：多级子页顶部小字路径） */}
-            {breadcrumb.length > 1 && (
-              <div className="flex items-center gap-1 pt-8 text-sm text-muted-foreground">
-                {breadcrumb.map((node, i) => (
-                  <span key={node.id} className="flex items-center gap-1">
-                    {i > 0 && <ChevronRight className="size-3" />}
-                    <span className="max-w-48 truncate">{node.title || te('untitled')}</span>
-                  </span>
-                ))}
-              </div>
-            )}
-            <article className="pt-12">
+      <SidebarInset className="scrollbar-thin h-svh overflow-y-auto">
+        {/* 顶栏：折叠开关 + 面包屑（06 §5.4 多级子页路径） */}
+        <div className="sticky top-0 z-10 flex items-center gap-2 bg-background/80 px-3 py-2 backdrop-blur">
+          <SidebarTrigger className="-ms-1" />
+          {view === 'page' &&
+            breadcrumb.length > 1 &&
+            breadcrumb.map((node, i) => (
+              <span key={node.id} className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+                {i > 0 && <ChevronRight className="size-3 shrink-0" />}
+                <span className="max-w-48 truncate">{node.title || te('untitled')}</span>
+              </span>
+            ))}
+        </div>
+
+        <div className="flex-1">
+          {view === 'search' && wsId ? (
+            <SearchView
+              wsId={wsId}
+              onOpen={(id) => {
+                const hit = findPath(tree, id).at(-1);
+                if (hit) {
+                  setSelected(hit);
+                  setView('page');
+                }
+              }}
+            />
+          ) : view === 'trash' && wsId ? (
+            <TrashView wsId={wsId} onChanged={() => wsId && void loadTree(wsId)} />
+          ) : view === 'settings' && me ? (
+            <SettingsView
+              name={me.user.name}
+              onSaved={(n) => setMe((m) => (m ? { ...m, user: { ...m.user, name: n } } : m))}
+            />
+          ) : error ? (
+            <div className="p-8 text-sm text-destructive">{error}</div>
+          ) : selected ? (
+            <article className="mx-auto px-8 pb-24" style={{ maxWidth: 'var(--width-content)' }}>
               <h1 className="text-4xl font-bold tracking-tight">
                 {selected.title || tc('appName')}
               </h1>
               <p className="mt-6 text-sm text-muted-foreground">{t('editorPhase1')}</p>
             </article>
-          </div>
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            {t('selectPage')}
-          </div>
-        )}
-      </main>
-    </div>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              {t('selectPage')}
+            </div>
+          )}
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
