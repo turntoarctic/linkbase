@@ -10,6 +10,7 @@
     "logout": "Log out",
     "language": "Language",
     "back": "Back",
+    "settings": "Settings",
     "defaultWorkspaceName": "{{name}}'s workspace"
   },
   "auth": {
@@ -41,7 +42,13 @@
     "editorPhase1": "Editor lands in Phase 1 (T1.2); metadata below comes from the server",
     "collapse": "Collapse",
     "expand": "Expand",
-    "addChildPage": "Add a subpage"
+    "addChildPage": "Add a subpage",
+    "searchPlaceholder": "Search pages…",
+    "searchNoResults": "No matching pages",
+    "trashEmpty": "Trash is empty",
+    "settings": "Settings",
+    "settingsName": "Name",
+    "nameSaved": "Saved"
   },
   "editor": {
     "untitled": "Untitled"

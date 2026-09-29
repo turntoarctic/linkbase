@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import type { PageTreeNode } from '@linkbase/contracts';
-import { ChevronDown, ChevronRight, LogOut, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, LogOut, Plus, Search, Settings, Trash2 } from 'lucide-react';
 import { api, jsonBody } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import i18n, { syncDocumentLang, supportedLocales, type AppLocale } from '@/i18n';
 import { changeLocale } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
+import { SearchView, SettingsView, TrashView } from './SidebarViews';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,6 +140,7 @@ export function AppShell() {
   const [selected, setSelected] = useState<PageTreeNode | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<'page' | 'search' | 'trash' | 'settings'>('page');
 
   const user = useAuthStore((s) => s.user);
 
@@ -258,6 +260,31 @@ export function AppShell() {
           </DropdownMenu>
         </div>
 
+        {/* 快捷入口（06 §5.4：搜索/收藏/回收站在树上、设置沉底） */}
+        <nav className="px-2 pb-1">
+          <ul>
+            {(
+              [
+                ['search', 'search', <Search key="s" />],
+                ['trash', 'trash', <Trash2 key="t" />],
+              ] as const
+            ).map(([key, label, icon]) => (
+              <li key={key}>
+                <button
+                  type="button"
+                  onClick={() => setView(key)}
+                  className={`flex h-7 w-full items-center gap-2 rounded-md px-1.5 text-sm transition-colors duration-100 select-none hover:bg-sidebar-accent ${
+                    view === key ? 'bg-sidebar-accent font-medium' : ''
+                  }`}
+                >
+                  {icon}
+                  <span>{t(label)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         {/* 页面树 */}
         <nav className="scrollbar-thin flex-1 overflow-y-auto px-2 pb-2">
           <ul>
@@ -276,13 +303,27 @@ export function AppShell() {
           </ul>
         </nav>
 
-        {/* 底部常驻「＋ 新页面」（06 §5.5） */}
-        <div className="p-2">
+        {/* 底部：设置 + 常驻「＋ 新页面」（06 §5.4/§5.5） */}
+        <div className="space-y-0.5 p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`h-8 w-full justify-start gap-2 text-muted-foreground ${
+              view === 'settings' ? 'bg-sidebar-accent' : ''
+            }`}
+            onClick={() => setView('settings')}
+          >
+            <Settings />
+            {tc('settings')}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             className="h-8 w-full justify-start gap-2 text-muted-foreground"
-            onClick={() => void createPage()}
+            onClick={() => {
+              setView('page');
+              void createPage();
+            }}
           >
             <Plus />
             {t('newPage')}
@@ -291,7 +332,27 @@ export function AppShell() {
       </aside>
 
       <main className="scrollbar-thin flex-1 overflow-y-auto">
-        {error ? (
+        {view === 'search' && wsId ? (
+          <SearchView
+            wsId={wsId}
+            onOpen={(id) => {
+              const hit = findPath(tree, id).at(-1);
+              if (hit) {
+                setSelected(hit);
+                setView('page');
+              }
+            }}
+          />
+        ) : view === 'trash' && wsId ? (
+          <TrashView wsId={wsId} onChanged={() => wsId && void loadTree(wsId)} />
+        ) : view === 'settings' && me ? (
+          <SettingsView
+            name={me.user.name}
+            onSaved={(n) =>
+              setMe((m) => (m ? { ...m, user: { ...m.user, name: n } } : m))
+            }
+          />
+        ) : error ? (
           <div className="p-8 text-sm text-destructive">{error}</div>
         ) : selected ? (
           <div className="mx-auto px-8 pb-24" style={{ maxWidth: 'var(--width-content)' }}>

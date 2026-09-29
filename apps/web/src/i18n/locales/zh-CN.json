@@ -10,6 +10,7 @@
     "logout": "退出登录",
     "language": "语言",
     "back": "返回",
+    "settings": "设置",
     "defaultWorkspaceName": "{{name}} 的空间"
   },
   "auth": {
@@ -41,7 +42,13 @@
     "editorPhase1": "编辑器在 Phase 1 接入（T1.2）；本页元数据来自服务端",
     "collapse": "收起",
     "expand": "展开",
-    "addChildPage": "新建子页面"
+    "addChildPage": "新建子页面",
+    "searchPlaceholder": "搜索页面…",
+    "searchNoResults": "没有匹配的页面",
+    "trashEmpty": "回收站是空的",
+    "settings": "设置",
+    "settingsName": "昵称",
+    "nameSaved": "已保存"
   },
   "editor": {
     "untitled": "无标题"
