@@ -18,6 +18,13 @@ export const patchPageSchema = z.object({
   icon: pageIconSchema.nullable().optional(),
 });
 
+/** 10 §4：拖拽换序/换父（T1.3）。afterId=null = 插入目标兄弟列表头部 */
+export const movePageSchema = z.object({
+  parentId: z.uuid().nullable().optional(),
+  afterId: z.uuid().nullable().optional(),
+});
+export type MovePageInput = z.infer<typeof movePageSchema>;
+
 // ---- 响应 ----
 
 export const pageMetaSchema = z.object({

@@ -1,13 +1,13 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { favorites, pageSnapshots, pageVisits, pages } from '@linkbase/database';
-import { notFound } from '../lib/errors';
+import { badRequest, notFound } from '../lib/errors';
 import type { AppDeps } from '../types';
-import type { CreatePageInput, PageMeta, PageTreeNode } from '@linkbase/contracts';
+import type { CreatePageInput, MovePageInput, PageMeta, PageTreeNode } from '@linkbase/contracts';
 import { pageState } from './docs';
 
 type PageRow = typeof pages.$inferSelect;
 
-function toMeta(p: PageRow): PageMeta {
+export function toMeta(p: PageRow): PageMeta {
   return {
     id: p.id,
     workspaceId: p.workspaceId,
@@ -26,7 +26,7 @@ async function listWsPages(deps: AppDeps, wsId: string): Promise<PageRow[]> {
     .select()
     .from(pages)
     .where(eq(pages.workspaceId, wsId))
-    .orderBy(asc(pages.createdAt));
+    .orderBy(asc(pages.position), asc(pages.createdAt));
 }
 
 /** 10 §4：非回收站全量树 */
@@ -144,6 +144,64 @@ function subtreeIds(all: PageRow[], rootId: string): string[] {
     for (const child of childrenOf.get(id) ?? []) stack.push(child.id);
   }
   return out;
+}
+
+/**
+ * 拖拽换序/换父（T1.3，10 §4）：parentId 省略 = 不换父；afterId=null = 目标兄弟列表头部。
+ * 中点插入（double precision），无间隔时整列重排；禁止移入自身子树（环检查）。
+ */
+export async function movePage(
+  deps: AppDeps,
+  wsId: string,
+  pageId: string,
+  input: MovePageInput,
+): Promise<PageMeta> {
+  const page = await getWsPage(deps, wsId, pageId);
+  if (page.isTrash) throw notFound('page not found');
+  const all = await listWsPages(deps, wsId);
+  const targetParentId = input.parentId === undefined ? page.parentId : input.parentId;
+  if (targetParentId) {
+    const parent = all.find((p) => p.id === targetParentId);
+    if (!parent || parent.isTrash) throw notFound('parent page not found');
+    // 环检查：新父不能是自己或自己的后代
+    if (targetParentId === pageId || subtreeIds(all, pageId).includes(targetParentId)) {
+      throw badRequest('cannot move a page into its own subtree');
+    }
+  }
+  // 目标兄弟（不含自己，已按 position/createdAt 有序）
+  const siblings = all.filter(
+    (p) => !p.isTrash && p.id !== pageId && (p.parentId ?? null) === targetParentId,
+  );
+  let index = 0;
+  if (input.afterId) {
+    const i = siblings.findIndex((p) => p.id === input.afterId);
+    if (i === -1) throw badRequest('afterId is not a sibling in the target list');
+    index = i + 1;
+  }
+  const prev = siblings[index - 1]?.position;
+  const next = siblings[index]?.position;
+  let position: number;
+  if (prev === undefined && next === undefined) position = 0;
+  else if (prev === undefined) position = next! - 1;
+  else if (next === undefined) position = prev + 1;
+  else if (next - prev >= 1e-9) position = (prev + next) / 2;
+  else {
+    // 中点间隔耗尽：整列重铺（间隔 1，空出第 index+1 槽），一次 UPDATE ... FROM (VALUES …)；走至此必有 next，列表非空
+    position = index + 1;
+    const values = sql.join(
+      siblings.map((s, i) => sql`(${s.id}::uuid, ${(i < index ? i : i + 1) + 1}::double precision)`),
+      sql`, `,
+    );
+    await deps.db.execute(
+      sql`update pages as p set position = v.pos from (values ${values}) as v(id, pos) where p.id = v.id`,
+    );
+  }
+  const updated = await deps.db
+    .update(pages)
+    .set({ parentId: targetParentId, position, updatedAt: new Date() })
+    .where(eq(pages.id, pageId))
+    .returning();
+  return toMeta(updated[0]!);
 }
 
 /** 移入回收站（含子树，10 §4） */

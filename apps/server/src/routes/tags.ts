@@ -41,6 +41,14 @@ export function tagRoutes(deps: AppDeps) {
     return c.json(await tagsService.pageTagList(deps, c.req.param('pageId')), 200);
   });
 
+  // 标签聚合视图（T1.5，P0-7）：标签 → 打标页面（非回收站）
+  app.get('/:wsId/tags/:tagId/pages', async (c) => {
+    return c.json(
+      await tagsService.tagPages(deps, c.get('wsId'), c.req.param('tagId')),
+      200,
+    );
+  });
+
   app.put('/:wsId/pages/:pageId/tags/:tagId', async (c) => {
     await tagsService.tagPage(deps, c.get('wsId'), c.req.param('pageId'), c.req.param('tagId'));
     return c.body(null, 204);

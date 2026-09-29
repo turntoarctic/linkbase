@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import type { ZodType } from 'zod';
-import { createPageSchema, patchPageSchema } from '@linkbase/contracts';
+import { createPageSchema, movePageSchema, patchPageSchema } from '@linkbase/contracts';
 import type { AppDeps, AppState } from '../types';
 import { requireAuth, requireMember } from '../middleware/auth';
 import * as pagesService from '../services/pages';
@@ -44,6 +44,18 @@ export function pageRoutes(deps: AppDeps) {
       const body = c.req.valid('json');
       return c.json(
         await pagesService.patchPage(deps, c.get('wsId'), c.req.param('pageId'), body),
+        200,
+      );
+    },
+  );
+
+  app.post(
+    '/:wsId/pages/:pageId/move',
+    jsonOrThrow(movePageSchema),
+    async (c) => {
+      const body = c.req.valid('json');
+      return c.json(
+        await pagesService.movePage(deps, c.get('wsId'), c.req.param('pageId'), body),
         200,
       );
     },

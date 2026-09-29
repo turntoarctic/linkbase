@@ -10,6 +10,7 @@ import {
   boolean,
   check,
   customType,
+  doublePrecision,
   index,
   integer,
   pgTable,
@@ -95,6 +96,8 @@ export const pages = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     isTemplate: boolean('is_template').notNull().default(false),
     parentId: uuid('parent_id'),
+    /** 兄弟排序键（08 §3.3）：move 中点插入，树序 = position, createdAt */
+    position: doublePrecision('position').notNull().default(0),
     text: text('text').notNull().default(''),
     searchTsv: tsvector('search_tsv').generatedAlwaysAs(
       sql`to_tsvector('simple', coalesce(title,'') || ' ' || coalesce(text,''))`,

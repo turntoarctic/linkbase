@@ -353,4 +353,97 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     const items = (await res.json()) as { id: string; title: string; breadcrumb: unknown[] }[];
     expect(items.some((i) => i.id === ctx.quickStartPageId)).toBe(true);
   });
+
+  test('move：换序/换父/环检查（T1.3）', async () => {
+    const app = createApp(ctx.deps);
+    const auth = {
+      Authorization: `Bearer ${ctx.accessToken}`,
+      'content-type': 'application/json',
+    };
+    const mk = async (parentId?: string) => {
+      const r = await app.request(`/api/workspaces/${ctx.wsId}/pages`, {
+        method: 'POST',
+        headers: auth,
+        body: JSON.stringify({ title: 'm', ...(parentId ? { parentId } : {}) }),
+      });
+      return ((await r.json()) as { id: string }).id;
+    };
+    const [a, b, c] = await Promise.all([mk(), mk(), mk()]);
+
+    // c 移到 b 之后 → 树序 a…变为 b 在 c 前
+    const moved = await app.request(`/api/workspaces/${ctx.wsId}/pages/${c}/move`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ afterId: b }),
+    });
+    expect(moved.status).toBe(200);
+    expect(((await moved.json()) as { parentId: string | null }).parentId).toBeNull();
+
+    const tree = (await (
+      await app.request(`/api/workspaces/${ctx.wsId}/pages`, { headers: auth })
+    ).json()) as { id: string; children: { id: string }[] }[];
+    const ids = tree.map((n) => n.id);
+    expect(ids.indexOf(b)).toBeLessThan(ids.indexOf(c));
+
+    // a 移入 b 下作子页
+    const into = await app.request(`/api/workspaces/${ctx.wsId}/pages/${a}/move`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ parentId: b }),
+    });
+    expect(into.status).toBe(200);
+    expect(((await into.json()) as { parentId: string | null }).parentId).toBe(b);
+
+    // 环检查：b 移入自己的子树 a 下 → 400
+    const cycle = await app.request(`/api/workspaces/${ctx.wsId}/pages/${b}/move`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ parentId: a }),
+    });
+    expect(cycle.status).toBe(400);
+    expect(((await cycle.json()) as { error: { code: string } }).error.code).toBe('LB_VALIDATION');
+
+    // afterId 非同列表兄弟 → 400
+    const badAfter = await app.request(`/api/workspaces/${ctx.wsId}/pages/${c}/move`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ afterId: a }),
+    });
+    expect(badAfter.status).toBe(400);
+  });
+
+  test('tagPages：标签聚合视图（T1.5）', async () => {
+    const app = createApp(ctx.deps);
+    const auth = {
+      Authorization: `Bearer ${ctx.accessToken}`,
+      'content-type': 'application/json',
+    };
+    const tag = (
+      (await (
+        await app.request(`/api/workspaces/${ctx.wsId}/tags`, {
+          method: 'POST',
+          headers: auth,
+          body: JSON.stringify({ name: '聚合测试', color: 2 }),
+        })
+      ).json()) as { id: string }
+    ).id;
+    await app.request(`/api/workspaces/${ctx.wsId}/pages/${ctx.quickStartPageId}/tags/${tag}`, {
+      method: 'PUT',
+      headers: auth,
+    });
+
+    const res = await app.request(`/api/workspaces/${ctx.wsId}/tags/${tag}/pages`, {
+      headers: auth,
+    });
+    expect(res.status).toBe(200);
+    const pages = (await res.json()) as { id: string }[];
+    expect(pages.some((p) => p.id === ctx.quickStartPageId)).toBe(true);
+
+    // 不存在的标签 → 404
+    const nf = await app.request(
+      `/api/workspaces/${ctx.wsId}/tags/${crypto.randomUUID()}/pages`,
+      { headers: auth },
+    );
+    expect(nf.status).toBe(404);
+  });
 });

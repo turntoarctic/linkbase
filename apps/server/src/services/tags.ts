@@ -1,8 +1,9 @@
 import { and, asc, eq } from 'drizzle-orm';
-import { pageTags, tags } from '@linkbase/database';
+import { pageTags, pages, tags } from '@linkbase/database';
 import { AppError, isUniqueViolation, notFound } from '../lib/errors';
 import type { AppDeps } from '../types';
-import type { CreateTagInput } from '@linkbase/contracts';
+import type { CreateTagInput, PageMeta } from '@linkbase/contracts';
+import { toMeta } from './pages';
 
 type TagRow = typeof tags.$inferSelect;
 
@@ -52,6 +53,23 @@ export async function deleteTag(deps: AppDeps, wsId: string, tagId: string): Pro
   // page_tags 级联清（08 §3.5）
   const rows = await deps.db.delete(tags).where(and(eq(tags.id, tagId), eq(tags.workspaceId, wsId))).returning({ id: tags.id });
   if (!rows[0]) throw notFound('tag not found');
+}
+
+/** 标签聚合（T1.5）：打标页面，非回收站，树序 */
+export async function tagPages(deps: AppDeps, wsId: string, tagId: string): Promise<PageMeta[]> {
+  const tag = await deps.db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(and(eq(tags.id, tagId), eq(tags.workspaceId, wsId)))
+    .limit(1);
+  if (!tag[0]) throw notFound('tag not found');
+  const rows = await deps.db
+    .select({ page: pages })
+    .from(pageTags)
+    .innerJoin(pages, eq(pages.id, pageTags.pageId))
+    .where(and(eq(pageTags.tagId, tagId), eq(pages.isTrash, false)))
+    .orderBy(asc(pages.position), asc(pages.createdAt));
+  return rows.map((r) => toMeta(r.page));
 }
 
 export async function tagPage(deps: AppDeps, wsId: string, pageId: string, tagId: string): Promise<void> {

@@ -65,6 +65,7 @@
 | POST | `/workspaces/:wsId/pages` | `{ title?, icon?, parentId?, templateId? }` → `201 { id, ... }`（templateId 走复制流程 08 §4.4） |
 | GET | `/workspaces/:wsId/pages/:pageId` | 元数据 |
 | PATCH | `/workspaces/:wsId/pages/:pageId` | `{ icon?, title? }`（title 仅作乐观展示的即时回填；服务端以 Y.Doc 提取为准，见 08 §3.3 注意） |
+| POST | `/workspaces/:wsId/pages/:pageId/move` | `{ parentId?, afterId? }` → `200 meta`（T1.3 拖拽换序/换父；afterId=null = 目标兄弟列表头部；禁止移入自身子树 → 400；排序见 08 §3.3 position） |
 | DELETE | `/workspaces/:wsId/pages/:pageId` | 移入回收站（204） |
 | POST | `/workspaces/:wsId/pages/:pageId/restore` | 恢复（含子树） |
 | DELETE | `/workspaces/:wsId/pages/:pageId?permanent=true` | 彻底删除（含子树，物理删） |
@@ -126,6 +127,7 @@
 | PATCH/DELETE | `/workspaces/:wsId/tags/:tagId` | 改名/改色 / 删除（page_tags 级联清） |
 | PUT/DELETE | `/workspaces/:wsId/pages/:pageId/tags/:tagId` | 打/去标签 |
 | GET | `/workspaces/:wsId/pages/:pageId/tags` | 页面标签 |
+| GET | `/workspaces/:wsId/tags/:tagId/pages` | 标签聚合（T1.5）：打标页面（非回收站，树序） |
 | GET | `/workspaces/:wsId/search?q=` | 搜索（08 §6）→ `[{ id, title, breadcrumb[], snippet? }]` |
 | GET | `/api/health` | 探活（07 §9） |
 
