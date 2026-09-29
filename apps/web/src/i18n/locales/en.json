@@ -1,0 +1,59 @@
+{
+  "common": {
+    "appName": "Linkbase",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "restore": "Restore",
+    "retry": "Retry",
+    "logout": "Log out",
+    "language": "Language",
+    "back": "Back",
+    "defaultWorkspaceName": "{{name}}'s workspace"
+  },
+  "auth": {
+    "loginTitle": "Sign in to Linkbase",
+    "loginSubtitle": "The block-based knowledge base for dev teams",
+    "registerTitle": "Create your account",
+    "registerSubtitle": "Your workspace is ready the moment you sign up",
+    "email": "Email",
+    "password": "Password",
+    "passwordMin": "At least 8 characters",
+    "name": "Name",
+    "emailRequired": "Enter a valid email",
+    "passwordRequired": "Enter your password",
+    "nameRequired": "Enter your name",
+    "submitLogin": "Sign in",
+    "submitRegister": "Sign up",
+    "toRegister": "No account? Sign up",
+    "toLogin": "Already have an account? Sign in"
+  },
+  "workspace": {
+    "sidebar": "Sidebar",
+    "pages": "Pages",
+    "newPage": "New page",
+    "trash": "Trash",
+    "search": "Search",
+    "favorites": "Favorites",
+    "noWorkspace": "No workspace yet",
+    "selectPage": "Pick a page on the left, or create one to start writing",
+    "editorPhase1": "Editor lands in Phase 1 (T1.2); metadata below comes from the server"
+  },
+  "editor": {
+    "untitled": "Untitled"
+  },
+  "errors": {
+    "LB_VALIDATION": "Invalid request",
+    "LB_UNAUTHORIZED": "Not signed in or session expired",
+    "LB_TOKEN_INVALID": "Session expired, please sign in again",
+    "LB_FORBIDDEN": "You are not allowed to do this",
+    "LB_NOT_FOUND": "Not found",
+    "LB_PAGE_NOT_FOUND": "Page not found",
+    "LB_EMAIL_TAKEN": "This email is already registered",
+    "LB_TAG_EXISTS": "A tag with this name already exists",
+    "LB_RATE_LIMITED": "Too many attempts, try again later",
+    "LB_PAYLOAD_TOO_LARGE": "Content exceeds the size limit",
+    "LB_INTERNAL": "Something went wrong, try again later"
+  }
+}

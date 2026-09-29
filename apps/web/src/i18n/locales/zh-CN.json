@@ -1,0 +1,59 @@
+{
+  "common": {
+    "appName": "Linkbase",
+    "loading": "加载中…",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "restore": "恢复",
+    "retry": "重试",
+    "logout": "退出登录",
+    "language": "语言",
+    "back": "返回",
+    "defaultWorkspaceName": "{{name}} 的空间"
+  },
+  "auth": {
+    "loginTitle": "登录 Linkbase",
+    "loginSubtitle": "万物基于 Block 的协作知识库",
+    "registerTitle": "创建账号",
+    "registerSubtitle": "注册即建空间，落笔即写",
+    "email": "邮箱",
+    "password": "密码",
+    "passwordMin": "至少 8 个字符",
+    "name": "昵称",
+    "emailRequired": "请输入有效邮箱",
+    "passwordRequired": "请输入密码",
+    "nameRequired": "请输入昵称",
+    "submitLogin": "登录",
+    "submitRegister": "注册并进入",
+    "toRegister": "没有账号？注册",
+    "toLogin": "已有账号？登录"
+  },
+  "workspace": {
+    "sidebar": "侧边栏",
+    "pages": "页面",
+    "newPage": "新建页面",
+    "trash": "回收站",
+    "search": "搜索",
+    "favorites": "收藏",
+    "noWorkspace": "还没有工作空间",
+    "selectPage": "选择左侧页面，或新建一页开始书写",
+    "editorPhase1": "编辑器在 Phase 1 接入（T1.2）；本页元数据来自服务端"
+  },
+  "editor": {
+    "untitled": "无标题"
+  },
+  "errors": {
+    "LB_VALIDATION": "请求参数无效",
+    "LB_UNAUTHORIZED": "未登录或登录已过期",
+    "LB_TOKEN_INVALID": "登录已失效，请重新登录",
+    "LB_FORBIDDEN": "没有权限执行此操作",
+    "LB_NOT_FOUND": "资源不存在",
+    "LB_PAGE_NOT_FOUND": "页面不存在",
+    "LB_EMAIL_TAKEN": "该邮箱已被注册",
+    "LB_TAG_EXISTS": "同名标签已存在",
+    "LB_RATE_LIMITED": "操作过于频繁，请稍后再试",
+    "LB_PAYLOAD_TOO_LARGE": "内容超过大小限制",
+    "LB_INTERNAL": "服务开小差了，请稍后再试"
+  }
+}

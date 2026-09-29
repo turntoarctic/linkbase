@@ -1,0 +1,13 @@
+{
+  "name": "@linkbase/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "catalog:"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "ui": "playwright test --ui"
+  }
+}

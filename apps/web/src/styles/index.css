@@ -1,0 +1,118 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   tokens —— 06 §5.1 全应用唯一的主题定义处（shadcn 标准集 + Linkbase 扩展集）
+   换风格 = 换值不换名；组件只允许语义 token，禁止裸色值。
+   ============================================================ */
+
+/* ① shadcn 标准变量集（承载 Notion 配色，值为 Notion 实测色） */
+:root {
+  --background: #ffffff;
+  --foreground: #37352f;
+  --card: #ffffff;
+  --card-foreground: #37352f;
+  --popover: #ffffff;
+  --popover-foreground: #37352f;
+  --primary: #2383e2;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f7f5;
+  --secondary-foreground: #37352f;
+  --muted: #efefee;
+  --muted-foreground: #787774;
+  --accent: #e8e8e6;
+  --accent-foreground: #37352f;
+  --destructive: #eb5757;
+  --border: #e9e9e7;
+  --input: #d3d1cb;
+  --ring: #2383e2;
+  --radius: 0.375rem;
+
+  --sidebar: #f7f7f5;
+  --sidebar-foreground: #37352f;
+  --sidebar-accent: #efefee;
+  --sidebar-border: #e9e9e7;
+  --sidebar-ring: #2383e2;
+
+  /* ② Linkbase 扩展变量集 */
+  --success: #0f7b6c;
+  --warning: #d9730d;
+  --text-tertiary: #9b9a97;
+
+  /* 标签色板（08 §3.5 tags.color 1–8 对应此表） */
+  --tag-1-bg: #e9e5ff; --tag-1-fg: #5b4fc7; /* 紫 */
+  --tag-2-bg: #dbeddb; --tag-2-fg: #2f7d46; /* 绿 */
+  --tag-3-bg: #ffeccc; --tag-3-fg: #ad6200; /* 橙 */
+  --tag-4-bg: #ffdfe0; --tag-4-fg: #c84040; /* 红 */
+  --tag-5-bg: #d3e5ef; --tag-5-fg: #337ea9; /* 蓝 */
+  --tag-6-bg: #e7e5e2; --tag-6-fg: #5e5c59; /* 灰 */
+  --tag-7-bg: #f3e0f7; --tag-7-fg: #8a4b9d; /* 品红 */
+  --tag-8-bg: #fbeba9; --tag-8-fg: #8f7717; /* 黄 */
+
+  /* 布局宽度（06 §5.3/§5.4） */
+  --width-sidebar: 240px;
+  --width-content: 720px;
+  --width-content-wide: 984px;
+}
+
+.dark {
+  --background: #191919;
+  --foreground: #d4d4d4;
+  --card: #1f1f1f;
+  --popover: #1f1f1f;
+  --sidebar: #202020;
+  --sidebar-foreground: #d4d4d4;
+  --sidebar-accent: #2c2c2c;
+  --sidebar-border: #2f2f2f;
+  --muted: #2c2c2c;
+  --muted-foreground: #9b9a97;
+  --accent: #333333;
+  --border: #2f2f2f;
+  --input: #3a3a3a;
+  --secondary: #262626;
+}
+
+/* ③ Tailwind 4 映射（与 shadcn 生成物一致） */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-text-tertiary: var(--text-tertiary);
+  --radius: var(--radius);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

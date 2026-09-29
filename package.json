@@ -1,0 +1,61 @@
+{
+  "name": "linkbase",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/blocksuite/**"
+  ],
+  "catalog": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "@vitejs/plugin-react": "^6.1.1",
+    "tailwindcss": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "hono": "^4.13.10",
+    "@hono/zod-validator": "^0.9.1",
+    "i18next": "^26.4.2",
+    "react-i18next": "^17.0.15",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "zod": "^4.6.5",
+    "drizzle-orm": "^0.45.3",
+    "drizzle-kit": "^0.31.11",
+    "pino": "^10.3.1",
+    "yjs": "^13.6.33",
+    "@tanstack/react-query": "^5.104.0",
+    "react-router": "^8.4.0",
+    "zustand": "^5.0.15",
+    "react-hook-form": "^7.89.0",
+    "@hookform/resolvers": "^5.9.1",
+    "vitest": "^5.0.2",
+    "happy-dom": "^20.14.5",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/dom": "^10.4.2",
+    "@playwright/test": "^1.63.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.3.1"
+  },
+  "overrides": {
+    "yjs": "13.6.33",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "trustedDependencies": [
+    "@tailwindcss/oxide",
+    "esbuild",
+    "rolldown",
+    "@playwright/test"
+  ],
+  "scripts": {
+    "dev": "bun run --filter @linkbase/server --filter @linkbase/web --parallel dev",
+    "build": "bun run --filter @linkbase/web build",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test apps/server packages",
+    "check": "bun run typecheck && bun test apps/server packages && node scripts/check-i18n.mjs",
+    "db:generate": "bun run --filter @linkbase/database db:generate",
+    "db:migrate": "bun run --filter @linkbase/database db:migrate"
+  }
+}
