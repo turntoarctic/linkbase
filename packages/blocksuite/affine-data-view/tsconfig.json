@@ -1,0 +1,29 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    {
+      "path": "../components"
+    },
+    {
+      "path": "../shared"
+    },
+    {
+      "path": "../../framework/global"
+    },
+    {
+      "path": "../../framework/std"
+    },
+    {
+      "path": "../../framework/store"
+    }
+  ]
+}

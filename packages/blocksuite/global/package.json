@@ -1,0 +1,28 @@
+{
+  "name": "@blocksuite/global",
+  "version": "0.22.4",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./env": "./src/env/index.ts",
+    "./exceptions": "./src/exceptions/index.ts",
+    "./di": "./src/di/index.ts",
+    "./types": "./src/types/index.ts",
+    "./gfx": "./src/gfx/index.ts",
+    "./disposable": "./src/disposable/index.ts",
+    "./lit": "./src/lit/index.ts"
+  },
+  "types": "./index.d.ts",
+  "dependencies": {
+    "@preact/signals-core": "^1.8.0",
+    "lib0": "^0.2.97",
+    "lit": "^3.2.0",
+    "rxjs": "^7.8.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "vitest": "3.1.3"
+  }
+}
