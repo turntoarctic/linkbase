@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
-import type { PageTreeNode } from '@linkbase/contracts';
+import { useNavigate, useParams } from 'react-router';
+import type { PageMeta, PageTreeNode } from '@linkbase/contracts';
 import { ChevronDown, ChevronRight, LogOut, Plus, Search, Settings, Trash2 } from 'lucide-react';
 import { api, jsonBody } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
@@ -14,7 +14,6 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -39,7 +38,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { SearchView, SettingsView, TrashView } from './SidebarViews';
+import { SearchDialog, SettingsDialog, TrashView } from './SidebarViews';
 
 interface Me {
   user: { id: string; name: string; locale: 'zh-CN' | 'en' | null };
@@ -185,12 +184,15 @@ export function AppShell() {
   const { t: te } = useTranslation('editor');
   const { i18n } = useTranslation();
   const navigate = useNavigate();
+  const { pageId } = useParams();
   const [me, setMe] = useState<Me | null>(null);
   const [wsId, setWsId] = useState<string | null>(null);
   const [tree, setTree] = useState<PageTreeNode[]>([]);
+  // 当前页由 URL（/:pageId）驱动，刷新/直达可恢复；showTrash 是唯一非页视图
   const [selected, setSelected] = useState<PageTreeNode | null>(null);
+  const [showTrash, setShowTrash] = useState(false);
+  const [dialog, setDialog] = useState<'search' | 'settings' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<'page' | 'search' | 'trash' | 'settings'>('page');
   // 侧栏宽度可拖拽（208–480，双击复位 240），持久化 localStorage
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const n = Number(localStorage.getItem('linkbase.sidebarWidth'));
@@ -215,6 +217,35 @@ export function AppShell() {
   const loadTree = useCallback(async (workspaceId: string) => {
     const tree = await api<PageTreeNode[]>(`/workspaces/${workspaceId}/pages`);
     setTree(tree);
+  }, []);
+
+  // URL → 页面：树上找得到就用树节点（含面包屑），找不到（深层未展开/直达链接）拉单页元数据
+  useEffect(() => {
+    if (!wsId || !pageId || showTrash) return;
+    const hit = findPath(tree, pageId).at(-1);
+    if (hit) {
+      setSelected(hit);
+      return;
+    }
+    let alive = true;
+    void api<PageMeta>(`/workspaces/${wsId}/pages/${pageId}`)
+      .then((p) => alive && setSelected({ ...p, children: [] }))
+      .catch(() => alive && setSelected(null));
+    return () => {
+      alive = false;
+    };
+  }, [wsId, pageId, tree, showTrash]);
+
+  // ⌘K 唤起搜索弹窗
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setDialog('search');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   useEffect(() => {
@@ -246,7 +277,19 @@ export function AppShell() {
       ...jsonBody({ title: '', ...(parentId ? { parentId } : {}) }),
     });
     await loadTree(wsId);
-    setSelected(page);
+    setShowTrash(false);
+    navigate(`/${page.id}`);
+  };
+
+  /** 打开页面：写 URL + 退出回收站视图（修复点树回不去页面的 bug） */
+  const openPage = (node: PageTreeNode) => {
+    setShowTrash(false);
+    navigate(`/${node.id}`);
+  };
+
+  const openPageId = (id: string) => {
+    setShowTrash(false);
+    navigate(`/${id}`);
   };
 
   const logout = () => {
@@ -310,27 +353,41 @@ export function AppShell() {
         </SidebarHeader>
 
         <SidebarContent>
-          {/* 快捷入口（06 §5.4：搜索/回收站） */}
+          {/* 快捷入口（06 §5.4）：搜索/回收站/设置/新建页；搜索与设置是弹窗 */}
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {(
-                  [
-                    ['search', Search],
-                    ['trash', Trash2],
-                  ] as const
-                ).map(([key, Icon]) => (
-                  <SidebarMenuItem key={key}>
-                    <SidebarMenuButton
-                      tooltip={t(key)}
-                      isActive={view === key}
-                      onClick={() => setView(key)}
-                    >
-                      <Icon />
-                      <span>{t(key)}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip={t('search')} onClick={() => setDialog('search')}>
+                    <Search />
+                    <span>{t('search')}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={t('trash')}
+                    isActive={showTrash}
+                    onClick={() => setShowTrash(true)}
+                  >
+                    <Trash2 />
+                    <span>{t('trash')}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={tc('settings')}
+                    onClick={() => setDialog('settings')}
+                  >
+                    <Settings />
+                    <span>{tc('settings')}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip={t('newPage')} onClick={() => void createPage()}>
+                    <Plus />
+                    <span>{t('newPage')}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -344,8 +401,8 @@ export function AppShell() {
                   <TreeItem
                     key={node.id}
                     node={node}
-                    selectedId={selected?.id ?? null}
-                    onSelect={setSelected}
+                    selectedId={showTrash ? null : (pageId ?? null)}
+                    onSelect={openPage}
                     onAddChild={(n) => void createPage(n.id)}
                   />
                 ))}
@@ -354,33 +411,6 @@ export function AppShell() {
           </SidebarGroup>
         </SidebarContent>
 
-        {/* 底部：设置 + 常驻「＋ 新页面」（06 §5.4/§5.5） */}
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                tooltip={tc('settings')}
-                isActive={view === 'settings'}
-                onClick={() => setView('settings')}
-              >
-                <Settings />
-                <span>{tc('settings')}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                tooltip={t('newPage')}
-                onClick={() => {
-                  setView('page');
-                  void createPage();
-                }}
-              >
-                <Plus />
-                <span>{t('newPage')}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
         <SidebarResizeHandle
           width={sidebarWidth}
           onWidth={setSidebarWidth}
@@ -389,37 +419,29 @@ export function AppShell() {
       </Sidebar>
 
       <SidebarInset className="scrollbar-thin h-svh overflow-y-auto">
-        {/* 顶栏：折叠开关 + 面包屑（06 §5.4 多级子页路径） */}
+        {/* 顶栏：折叠开关 + 面包屑（06 §5.4 多级子页路径，可点击跳转） */}
         <div className="sticky top-0 z-10 flex items-center gap-2 bg-background/80 px-3 py-2 backdrop-blur">
           <SidebarTrigger className="-ms-1" />
-          {view === 'page' &&
+          {!showTrash &&
             breadcrumb.length > 1 &&
             breadcrumb.map((node, i) => (
-              <span key={node.id} className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+              <button
+                key={node.id}
+                type="button"
+                onClick={() => openPageId(node.id)}
+                className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              >
                 {i > 0 && <ChevronRight className="size-3 shrink-0" />}
                 <span className="max-w-48 truncate">{node.title || te('untitled')}</span>
-              </span>
+              </button>
             ))}
         </div>
 
         <div className="flex-1">
-          {view === 'search' && wsId ? (
-            <SearchView
+          {showTrash && wsId ? (
+            <TrashView
               wsId={wsId}
-              onOpen={(id) => {
-                const hit = findPath(tree, id).at(-1);
-                if (hit) {
-                  setSelected(hit);
-                  setView('page');
-                }
-              }}
-            />
-          ) : view === 'trash' && wsId ? (
-            <TrashView wsId={wsId} onChanged={() => wsId && void loadTree(wsId)} />
-          ) : view === 'settings' && me ? (
-            <SettingsView
-              name={me.user.name}
-              onSaved={(n) => setMe((m) => (m ? { ...m, user: { ...m.user, name: n } } : m))}
+              onChanged={() => wsId && void loadTree(wsId)}
             />
           ) : error ? (
             <div className="p-8 text-sm text-destructive">{error}</div>
@@ -436,6 +458,22 @@ export function AppShell() {
             </div>
           )}
         </div>
+
+        {/* 弹窗：搜索（⌘K）/ 设置 */}
+        {wsId && (
+          <SearchDialog
+            wsId={wsId}
+            open={dialog === 'search'}
+            onOpenChange={(o) => setDialog(o ? 'search' : null)}
+            onOpenPage={openPageId}
+          />
+        )}
+        <SettingsDialog
+          open={dialog === 'settings'}
+          onOpenChange={(o) => setDialog(o ? 'settings' : null)}
+          name={me?.user.name ?? ''}
+          onSaved={(n) => setMe((m) => (m ? { ...m, user: { ...m.user, name: n } } : m))}
+        />
       </SidebarInset>
     </SidebarProvider>
   );

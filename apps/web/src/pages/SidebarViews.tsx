@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PageMeta } from '@linkbase/contracts';
+import { Search } from 'lucide-react';
 import { api, jsonBody } from '@/lib/api';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 /** 搜索结果（GET /workspaces/:wsId/search，10 §7） */
 interface SearchHit {
@@ -12,22 +21,32 @@ interface SearchHit {
   breadcrumb: { id: string; title: string }[];
 }
 
-export function SearchView({
+/** 搜索：⌘K 命令面板式弹窗（非页面），回车/点击直达页面 */
+export function SearchDialog({
   wsId,
-  onOpen,
+  open,
+  onOpenChange,
+  onOpenPage,
 }: {
   wsId: string;
-  onOpen: (id: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenPage: (id: string) => void;
 }) {
   const { t } = useTranslation('workspace');
   const { t: te } = useTranslation('editor');
   const [q, setQ] = useState('');
-  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [hits, setHits] = useState<SearchHit[]>([]);
 
   useEffect(() => {
+    if (!open) {
+      setQ('');
+      setHits([]);
+      return;
+    }
     const query = q.trim();
     if (!query) {
-      setHits(null);
+      setHits([]);
       return;
     }
     const timer = setTimeout(() => {
@@ -36,33 +55,47 @@ export function SearchView({
         .catch(() => setHits([]));
     }, 250);
     return () => clearTimeout(timer);
-  }, [q, wsId]);
+  }, [q, wsId, open]);
+
+  const openHit = (id: string) => {
+    onOpenPage(id);
+    onOpenChange(false);
+  };
 
   return (
-    <div className="mx-auto px-8 pb-24" style={{ maxWidth: 'var(--width-content)' }}>
-      <h1 className="pt-12 text-4xl font-bold tracking-tight">{t('search')}</h1>
-      <input
-        autoFocus
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder={t('searchPlaceholder')}
-        className="mt-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-      />
-      {hits !== null && (
-        <ul className="mt-4">
-          {hits.length === 0 && (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gap-0 p-0 sm:max-w-xl" showCloseButton={false}>
+        <DialogHeader className="sr-only">
+          <DialogTitle>{t('search')}</DialogTitle>
+          <DialogDescription>{t('searchPlaceholder')}</DialogDescription>
+        </DialogHeader>
+        <div className="flex items-center gap-2 border-b px-3">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <Input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t('searchPlaceholder')}
+            className="border-0 shadow-none focus-visible:ring-0"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && hits[0]) openHit(hits[0].id);
+            }}
+          />
+        </div>
+        <ul className="max-h-80 overflow-y-auto p-1.5">
+          {q.trim() && hits.length === 0 && (
             <li className="px-2 py-3 text-sm text-muted-foreground">{t('searchNoResults')}</li>
           )}
           {hits.map((hit) => (
             <li key={hit.id}>
               <button
                 type="button"
-                onClick={() => onOpen(hit.id)}
+                onClick={() => openHit(hit.id)}
                 className="w-full rounded-md px-2 py-2 text-left text-sm hover:bg-sidebar-accent"
               >
                 <span>{hit.title || te('untitled')}</span>
                 {hit.breadcrumb.length > 0 && (
-                  <span className="ml-2 text-xs text-muted-foreground">
+                  <span className="ms-2 text-xs text-muted-foreground">
                     {hit.breadcrumb.map((b) => b.title || te('untitled')).join(' / ')}
                   </span>
                 )}
@@ -70,8 +103,8 @@ export function SearchView({
             </li>
           ))}
         </ul>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -106,8 +139,8 @@ export function TrashView({ wsId, onChanged }: { wsId: string; onChanged: () => 
 
   return (
     <div className="mx-auto px-8 pb-24" style={{ maxWidth: 'var(--width-content)' }}>
-      <h1 className="pt-12 text-4xl font-bold tracking-tight">{t('trash')}</h1>
-      <ul className="mt-8">
+      <h1 className="pt-8 text-3xl font-bold tracking-tight">{t('trash')}</h1>
+      <ul className="mt-6">
         {items?.length === 0 && (
           <li className="px-2 text-sm text-muted-foreground">{t('trashEmpty')}</li>
         )}
@@ -142,10 +175,15 @@ export function TrashView({ wsId, onChanged }: { wsId: string; onChanged: () => 
   );
 }
 
-export function SettingsView({
+/** 设置：弹窗（昵称 + 语言） */
+export function SettingsDialog({
+  open,
+  onOpenChange,
   name,
   onSaved,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   name: string;
   onSaved: (name: string) => void;
 }) {
@@ -153,6 +191,13 @@ export function SettingsView({
   const { t: tc } = useTranslation('common');
   const [draft, setDraft] = useState(name);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setDraft(name);
+      setSaved(false);
+    }
+  }, [open, name]);
 
   const save = async () => {
     await api('/users/me', { method: 'PATCH', ...jsonBody({ name: draft }) });
@@ -162,28 +207,32 @@ export function SettingsView({
   };
 
   return (
-    <div className="mx-auto px-8 pb-24" style={{ maxWidth: 'var(--width-content)' }}>
-      <h1 className="pt-12 text-4xl font-bold tracking-tight">{t('settings')}</h1>
-      <div className="mt-8 max-w-96 space-y-6">
-        <div>
-          <div className="mb-2 text-sm text-muted-foreground">{t('settingsName')}</div>
-          <div className="flex items-center gap-2">
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-            <Button size="sm" disabled={!draft.trim() || draft === name} onClick={() => void save()}>
-              {tc('save')}
-            </Button>
-            {saved && <span className="text-sm text-muted-foreground">{t('nameSaved')}</span>}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t('settings')}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-5">
+          <div>
+            <div className="mb-2 text-sm text-muted-foreground">{t('settingsName')}</div>
+            <div className="flex items-center gap-2">
+              <Input value={draft} onChange={(e) => setDraft(e.target.value)} />
+              <Button
+                size="sm"
+                disabled={!draft.trim() || draft === name}
+                onClick={() => void save()}
+              >
+                {tc('save')}
+              </Button>
+              {saved && <span className="text-sm text-muted-foreground">{t('nameSaved')}</span>}
+            </div>
+          </div>
+          <div>
+            <div className="mb-2 text-sm text-muted-foreground">{tc('language')}</div>
+            <LanguageSwitcher />
           </div>
         </div>
-        <div>
-          <div className="mb-2 text-sm text-muted-foreground">{tc('language')}</div>
-          <LanguageSwitcher />
-        </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
