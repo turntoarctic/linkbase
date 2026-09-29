@@ -19,3 +19,16 @@ export const forbidden = (message = 'not allowed') => new AppError('LB_FORBIDDEN
 export const notFound = (message = 'resource not found') =>
   new AppError('LB_NOT_FOUND', 404, message);
 export const pageNotFound = () => new AppError('LB_PAGE_NOT_FOUND', 404, 'page not found');
+
+/**
+ * 唯一冲突（PG 23505）检测：drizzle 会把驱动错误包在 DrizzleQueryError 里，
+ * 需沿 cause 链逐层找原始 PG 错误（constraint 名或 message）。
+ */
+export function isUniqueViolation(err: unknown, constraint?: string): boolean {
+  for (let e = err; e instanceof Error; e = (e as { cause?: Error }).cause) {
+    const pg = e as Error & { code?: string; constraint?: string };
+    if (pg.code === '23505' && (!constraint || pg.constraint === constraint)) return true;
+    if (constraint && e.message.includes(constraint)) return true;
+  }
+  return false;
+}

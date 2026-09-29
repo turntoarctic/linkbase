@@ -52,6 +52,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     const app = createApp(ctx.deps);
     const res = await app.request('/api/auth/register', {
       method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email, password, name: '测试用户' }),
     });
     expect(res.status).toBe(201);
@@ -84,6 +85,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     const app = createApp(ctx.deps);
     const res = await app.request('/api/auth/register', {
       method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email, password, name: '重复' }),
     });
     expect(res.status).toBe(409);
@@ -95,6 +97,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     const app = createApp(ctx.deps);
     const login = await app.request('/api/auth/login', {
       method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     expect(login.status).toBe(200);
@@ -117,7 +120,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     // 建子页
     const create = await app.request(`/api/workspaces/${ctx.wsId}/pages`, {
       method: 'POST',
-      headers: auth,
+      headers: { ...auth, 'content-type': 'application/json' },
       body: JSON.stringify({ title: '子页', parentId: ctx.quickStartPageId }),
     });
     expect(create.status).toBe(201);
@@ -214,7 +217,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     // 建新页并推送带标题的 doc 状态
     const create = await app.request(`/api/workspaces/${ctx.wsId}/pages`, {
       method: 'POST',
-      headers: auth,
+      headers: { ...auth, 'content-type': 'application/json' },
       body: JSON.stringify({ title: '' }),
     });
     const page = (await create.json()) as { id: string };
@@ -252,6 +255,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     // 非成员访问他人空间
     const reg = await app.request('/api/auth/register', {
       method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         email: `intruder-${Date.now()}@linkbase.test`,
         password,
@@ -272,6 +276,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     const oldToken = ctx.refreshToken;
     const r1 = await app.request('/api/auth/refresh', {
       method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ refreshToken: oldToken }),
     });
     expect(r1.status).toBe(200);
@@ -281,6 +286,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     // 旧 token 已旋转：再刷 → 401 LB_TOKEN_INVALID（07 §5）
     const stale = await app.request('/api/auth/refresh', {
       method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ refreshToken: oldToken }),
     });
     expect(stale.status).toBe(401);
@@ -289,6 +295,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
 
     const out = await app.request('/api/auth/logout', {
       method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ refreshToken: ctx.refreshToken }),
     });
     expect(out.status).toBe(204);
@@ -308,7 +315,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     const auth = { Authorization: `Bearer ${ctx.accessToken}` };
     const create = await app.request(`/api/workspaces/${ctx.wsId}/tags`, {
       method: 'POST',
-      headers: auth,
+      headers: { ...auth, 'content-type': 'application/json' },
       body: JSON.stringify({ name: 'P0', color: 3 }),
     });
     expect(create.status).toBe(201);
@@ -316,7 +323,7 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
 
     const dup = await app.request(`/api/workspaces/${ctx.wsId}/tags`, {
       method: 'POST',
-      headers: auth,
+      headers: { ...auth, 'content-type': 'application/json' },
       body: JSON.stringify({ name: 'P0' }),
     });
     expect(dup.status).toBe(409);

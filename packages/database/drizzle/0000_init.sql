@@ -120,8 +120,3 @@ CREATE TABLE page_visits (
   visited_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, page_id)
 );
---> statement-breakpoint
-CREATE TABLE _linkbase_migrations (
-  name text PRIMARY KEY,
-  applied_at timestamptz NOT NULL DEFAULT now()
-);

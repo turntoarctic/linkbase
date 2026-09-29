@@ -8,3 +8,5 @@ test-results/
 .vite/
 .DS_Store
 docs/blocksuite/
+.run/
+pi-session-*.html

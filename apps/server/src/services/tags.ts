@@ -1,6 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm';
 import { pageTags, tags } from '@linkbase/database';
-import { AppError, notFound } from '../lib/errors';
+import { AppError, isUniqueViolation, notFound } from '../lib/errors';
 import type { AppDeps } from '../types';
 import type { CreateTagInput } from '@linkbase/contracts';
 
@@ -20,8 +20,8 @@ export async function createTag(deps: AppDeps, wsId: string, input: CreateTagInp
   try {
     await deps.db.insert(tags).values({ id, workspaceId: wsId, name: input.name, color: input.color });
   } catch (err) {
-    // unique (workspace_id, name) 冲突 → LB_TAG_EXISTS（10 §6）
-    if (err instanceof Error && err.message.includes('tags_ws_name_key')) {
+    // unique (workspace_id, name) 冲突 → LB_TAG_EXISTS（10 §6）；需沿 cause 链找 PG 原始错误
+    if (isUniqueViolation(err, 'tags_ws_name_key')) {
       throw new AppError('LB_TAG_EXISTS', 409, 'tag name already exists');
     }
     throw err;

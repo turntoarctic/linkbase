@@ -53,9 +53,16 @@
     "dev": "bun run --filter @linkbase/server --filter @linkbase/web --parallel dev",
     "build": "bun run --filter @linkbase/web build",
     "typecheck": "bun run --filter '*' typecheck",
-    "test": "bun test apps/server packages",
+    "test": "bun test apps/server packages/database packages/ydoc packages/contracts",
     "check": "bun run typecheck && bun test apps/server packages && node scripts/check-i18n.mjs",
+    "serve": "bun apps/server/src/index.ts",
     "db:generate": "bun run --filter @linkbase/database db:generate",
-    "db:migrate": "bun run --filter @linkbase/database db:migrate"
+    "db:migrate": "bun run --filter @linkbase/database db:migrate",
+    "db:setup": "bash scripts/setup-db.sh",
+    "stack:start": "bash scripts/stack.sh start",
+    "stack:stop": "bash scripts/stack.sh stop",
+    "stack:reload": "bash scripts/stack.sh reload",
+    "stack:test": "bash scripts/stack.sh test",
+    "stack:status": "bash scripts/stack.sh status"
   }
 }

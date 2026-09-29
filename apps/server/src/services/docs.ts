@@ -112,9 +112,13 @@ export async function derivePage(deps: AppDeps, wsId: string, pageId: string): P
   const state = await pageState(deps, pageId);
   if (!state || state.state.byteLength === 0) return;
   const meta = extractMetaFromState(state.state);
+  // title 仅在提取到非空标题时覆盖：doc 无标题信息时不字库内已有 title（如模板/快速开始页）
   await deps.db
     .update(pages)
-    .set({ title: meta.title, text: meta.text.slice(0, SEARCH_TEXT_LIMIT) })
+    .set({
+      ...(meta.title ? { title: meta.title } : {}),
+      text: meta.text.slice(0, SEARCH_TEXT_LIMIT),
+    })
     .where(eq(pages.id, pageId));
   // 子页面块 → 子页的 parent_id（08 §5：一个页面最多一个父页；同空间约束）
   for (const childId of meta.subPageIds) {
