@@ -117,8 +117,7 @@ function TreeItem({
         </SidebarMenuAction>
         {hasChildren && (
           <CollapsibleContent>
-            {/* me-0：子层行宽也顶到侧栏右缘（加号按钮贴最右） */}
-            <SidebarMenuSub className="me-0">
+            <SidebarMenuSub>
               {node.children.map((child) => (
                 <TreeItem
                   key={child.id}
