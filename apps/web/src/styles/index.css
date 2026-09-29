@@ -100,6 +100,27 @@
   --color-warning: var(--warning);
   --color-text-tertiary: var(--text-tertiary);
   --radius: var(--radius);
+
+  /* 应用 chrome 字号（06 §5.2）：侧边栏/次要信息 13px，行高 1.5 */
+  --text-sm: 13px;
+  --text-sm--line-height: 1.5;
+}
+
+/* Notion 式细滚动条（06 §5.4 侧边栏/正文滚动区用） */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 body {

@@ -38,7 +38,10 @@
     "favorites": "Favorites",
     "noWorkspace": "No workspace yet",
     "selectPage": "Pick a page on the left, or create one to start writing",
-    "editorPhase1": "Editor lands in Phase 1 (T1.2); metadata below comes from the server"
+    "editorPhase1": "Editor lands in Phase 1 (T1.2); metadata below comes from the server",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "addChildPage": "Add a subpage"
   },
   "editor": {
     "untitled": "Untitled"

@@ -38,7 +38,10 @@
     "favorites": "收藏",
     "noWorkspace": "还没有工作空间",
     "selectPage": "选择左侧页面，或新建一页开始书写",
-    "editorPhase1": "编辑器在 Phase 1 接入（T1.2）；本页元数据来自服务端"
+    "editorPhase1": "编辑器在 Phase 1 接入（T1.2）；本页元数据来自服务端",
+    "collapse": "收起",
+    "expand": "展开",
+    "addChildPage": "新建子页面"
   },
   "editor": {
     "untitled": "无标题"
