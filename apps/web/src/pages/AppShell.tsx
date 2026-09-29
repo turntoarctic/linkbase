@@ -81,36 +81,44 @@ function TreeItem({
           onClick={() => onSelect(node)}
           className="text-[13px]"
         >
-          <span aria-hidden>{node.icon ?? '📄'}</span>
-          <span className="truncate">{title}</span>
-          {hasChildren && (
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label={open ? tw('collapse') : tw('expand')}
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen((o) => !o);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
+          {/* Notion 式：hover 时 📄 换成折叠箭头（按开合状态旋转）；叶子保持 📄 */}
+          {hasChildren ? (
+            <>
+              <span aria-hidden className="group-hover/menu-button:hidden">
+                {node.icon ?? '📄'}
+              </span>
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={open ? tw('collapse') : tw('expand')}
+                onClick={(e) => {
                   e.stopPropagation();
                   setOpen((o) => !o);
-                }
-              }}
-              className="ms-auto rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
-            >
-              <ChevronRight className="size-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-            </span>
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setOpen((o) => !o);
+                  }
+                }}
+                className="hidden size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground group-hover/menu-button:flex hover:text-foreground"
+              >
+                <ChevronRight className="size-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+              </span>
+            </>
+          ) : (
+            <span aria-hidden>{node.icon ?? '📄'}</span>
           )}
+          <span className="truncate">{title}</span>
         </SidebarMenuButton>
         <SidebarMenuAction showOnHover onClick={() => { setOpen(true); onAddChild(node); }} title={tw('addChildPage')}>
           <Plus />
         </SidebarMenuAction>
         {hasChildren && (
           <CollapsibleContent>
-            <SidebarMenuSub>
+            {/* me-0：子层行宽也顶到侧栏右缘（加号按钮贴最右） */}
+            <SidebarMenuSub className="me-0">
               {node.children.map((child) => (
                 <TreeItem
                   key={child.id}
