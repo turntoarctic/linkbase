@@ -22,6 +22,7 @@ bun run build          # 前端产物 → apps/web/dist
 bun run serve          # 单独起后端（读根 .env）
 bun run db:migrate     # 执行迁移（读根 .env 的 DATABASE_URL）
 bun run stack:start    # 用户态 nginx(:30177) 静态 + 反代（scripts/stack.sh）
+STACK_CONF=$PWD/deploy/nginx/nginx.dev.conf ./scripts/stack.sh start   # dev 态：:30177 → vite :5173（/api、/ws 由 vite 转发 :3001；生产恢复 = bun run build 后默认 start）
 ```
 
 ## 2. 环境事实

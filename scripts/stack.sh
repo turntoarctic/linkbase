@@ -7,9 +7,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONF="$ROOT/deploy/nginx/nginx.conf"
+CONF="${STACK_CONF:-$ROOT/deploy/nginx/nginx.conf}"
 RUN_DIR="$ROOT/.run/nginx"
-PID_FILE="$RUN_DIR/nginx.pid"
+PID_FILE="$RUN_DIR/$(basename "${CONF}" .conf).pid"   # 随 STACK_CONF 变（nginx.pid / nginx.dev.pid）
 PORT="${PORT:-30177}"
 
 ensure_dirs() {
