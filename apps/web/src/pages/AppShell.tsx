@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import type { PageMeta, PageTreeNode } from '@linkbase/contracts';
+import type { Store } from '@blocksuite/store';
 import { ChevronDown, ChevronRight, LogOut, Plus, Search, Settings, Trash2 } from 'lucide-react';
 import { api, jsonBody } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
@@ -39,6 +41,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SearchDialog, SettingsDialog, TrashView } from './SidebarViews';
+import { getCollection, openPageDoc } from '@/features/editor/collection';
+
+// BlockSuite 体量大，懒加载不进首屏包
+const EditorView = lazy(() =>
+  import('@/features/editor/editor-view').then((m) => ({ default: m.EditorView })),
+);
 
 interface Me {
   user: { id: string; name: string; locale: 'zh-CN' | 'en' | null };
@@ -255,6 +263,26 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // 编辑器：每空间一个 DocCollection；选中页 → 打开 doc（服务端 shadow 源后台 pull/push）
+  const collection = useMemo(() => (wsId ? getCollection(wsId) : null), [wsId]);
+  const [store, setStore] = useState<Store | null>(null);
+  useEffect(() => {
+    if (!collection || !selected || showTrash) {
+      setStore(null);
+      return;
+    }
+    let alive = true;
+    void openPageDoc(collection, selected.id).then((s) => {
+      if (alive) setStore(s);
+      // 服务端派生对齐是异步的：切页后刷新树，标题尽快跟上
+      if (wsId) void loadTree(wsId);
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collection, selected, showTrash]);
+
   useEffect(() => {
     void (async () => {
       try {
@@ -453,12 +481,20 @@ export function AppShell() {
           ) : error ? (
             <div className="p-8 text-sm text-destructive">{error}</div>
           ) : selected ? (
-            <article className="mx-auto px-8 pb-24" style={{ maxWidth: 'var(--width-content)' }}>
-              <h1 className="text-4xl font-bold tracking-tight">
-                {selected.title || tc('appName')}
-              </h1>
-              <p className="mt-6 text-sm text-muted-foreground">{t('editorPhase1')}</p>
-            </article>
+            store ? (
+              <div
+                className="mx-auto h-full px-8 pb-24"
+                style={{ maxWidth: 'var(--width-content)' }}
+              >
+                <Suspense fallback={null}>
+                  <EditorView store={store} />
+                </Suspense>
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                {tc('loading')}
+              </div>
+            )
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               {t('selectPage')}

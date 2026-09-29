@@ -75,26 +75,3 @@ export async function openPageDoc(
   return store;
 }
 
-/** 在 Y.Doc 里改标题（真相源；服务端派生缓存随后对齐，08 §5） */
-export async function renamePageDoc(
-  collection: TestWorkspace,
-  pageId: string,
-  title: string,
-): Promise<void> {
-  const store = await openPageDoc(collection, pageId);
-  const root = store.root;
-  if (!root) return;
-  store.transact(() => {
-    const titleText = root.props.title as unknown as {
-      delete: (i: number, l: number) => void;
-      insert: (i: number, s: string) => void;
-      length: number;
-    };
-    if (titleText && typeof titleText.delete === 'function') {
-      titleText.delete(0, titleText.length);
-      titleText.insert(0, title);
-    } else {
-      (root.props as Record<string, unknown>).title = new Text(title);
-    }
-  });
-}

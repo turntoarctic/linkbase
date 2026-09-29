@@ -137,3 +137,15 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* 编辑器（05 §5）：视口高度链路 + 内容列居中 */
+.linkbase-editor {
+  height: 100%;
+}
+.linkbase-editor .affine-editor-container {
+  height: 100%;
+}
+.linkbase-editor .affine-editor-viewport {
+  height: 100%;
+  overflow-y: auto;
+}

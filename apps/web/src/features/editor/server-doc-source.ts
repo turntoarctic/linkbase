@@ -8,6 +8,15 @@
 import type { DocSource } from '@blocksuite/affine/sync';
 import { apiBytes, apiVoid } from '@/lib/api';
 
+/** 分块转 base64：直接 spread 进 String.fromCharCode 超 ~65KB 会爆栈 */
+function toBase64(bytes: Uint8Array): string {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(bin);
+}
+
 export class ServerDocSource implements DocSource {
   name = 'linkbase-server';
 
@@ -22,7 +31,7 @@ export class ServerDocSource implements DocSource {
 
   async pull(docId: string, state: Uint8Array) {
     if (this.isRoot(docId)) return null;
-    const sv = encodeURIComponent(btoa(String.fromCharCode(...state)));
+    const sv = encodeURIComponent(toBase64(state));
     const missing = await apiBytes(
       `/workspaces/${this.wsId}/pages/${docId}/doc?state=${sv}`,
     );
