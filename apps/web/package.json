@@ -11,6 +11,7 @@
     "@tanstack/react-query": "catalog:",
     "class-variance-authority": "^0.7.1",
     "clsx": "catalog:",
+    "cmdk": "^1.1.1",
     "cn": "^0.4.0",
     "i18next": "catalog:",
     "i18next-browser-languagedetector": "catalog:",

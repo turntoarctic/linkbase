@@ -357,13 +357,13 @@ export function AppShell() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
+                <SidebarMenuItem className="mt-1">
                   <SidebarMenuButton tooltip={t('search')} onClick={() => setDialog('search')}>
                     <Search />
                     <span>{t('search')}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
+                <SidebarMenuItem className="mt-1">
                   <SidebarMenuButton
                     tooltip={t('trash')}
                     isActive={showTrash}
@@ -373,7 +373,7 @@ export function AppShell() {
                     <span>{t('trash')}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
+                <SidebarMenuItem className="mt-1">
                   <SidebarMenuButton
                     tooltip={tc('settings')}
                     onClick={() => setDialog('settings')}
@@ -382,7 +382,7 @@ export function AppShell() {
                     <span>{tc('settings')}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
+                <SidebarMenuItem className="mt-1">
                   <SidebarMenuButton tooltip={t('newPage')} onClick={() => void createPage()}>
                     <Plus />
                     <span>{t('newPage')}</span>

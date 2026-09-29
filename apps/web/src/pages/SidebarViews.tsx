@@ -1,17 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PageMeta } from '@linkbase/contracts';
-import { Search } from 'lucide-react';
 import { api, jsonBody } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Input } from '@/components/ui/input';
+import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 /** 搜索结果（GET /workspaces/:wsId/search，10 §7） */
@@ -21,7 +28,7 @@ interface SearchHit {
   breadcrumb: { id: string; title: string }[];
 }
 
-/** 搜索：⌘K 命令面板式弹窗（非页面），回车/点击直达页面 */
+/** 搜索：⌘K 命令面板弹窗（cmdk 键盘导航），回车/点击直达页面 */
 export function SearchDialog({
   wsId,
   open,
@@ -63,48 +70,46 @@ export function SearchDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 p-0 sm:max-w-xl" showCloseButton={false}>
-        <DialogHeader className="sr-only">
-          <DialogTitle>{t('search')}</DialogTitle>
-          <DialogDescription>{t('searchPlaceholder')}</DialogDescription>
-        </DialogHeader>
-        <div className="flex items-center gap-2 border-b px-3">
-          <Search className="size-4 shrink-0 text-muted-foreground" />
-          <Input
-            autoFocus
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('searchPlaceholder')}
-            className="border-0 shadow-none focus-visible:ring-0"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && hits[0]) openHit(hits[0].id);
-            }}
-          />
-        </div>
-        <ul className="max-h-80 overflow-y-auto p-1.5">
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t('search')}
+      description={t('searchPlaceholder')}
+      className="sm:max-w-xl"
+    >
+      <Command shouldFilter={false}>
+        <CommandInput
+          autoFocus
+          value={q}
+          onValueChange={setQ}
+          placeholder={t('searchPlaceholder')}
+        />
+        <CommandList>
           {q.trim() && hits.length === 0 && (
-            <li className="px-2 py-3 text-sm text-muted-foreground">{t('searchNoResults')}</li>
+            <CommandEmpty>{t('searchNoResults')}</CommandEmpty>
           )}
-          {hits.map((hit) => (
-            <li key={hit.id}>
-              <button
-                type="button"
-                onClick={() => openHit(hit.id)}
-                className="w-full rounded-md px-2 py-2 text-left text-sm hover:bg-sidebar-accent"
-              >
-                <span>{hit.title || te('untitled')}</span>
-                {hit.breadcrumb.length > 0 && (
-                  <span className="ms-2 text-xs text-muted-foreground">
-                    {hit.breadcrumb.map((b) => b.title || te('untitled')).join(' / ')}
-                  </span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </DialogContent>
-    </Dialog>
+          {hits.length > 0 && (
+            <CommandGroup>
+              {hits.map((hit) => (
+                <CommandItem
+                  key={hit.id}
+                  value={hit.id}
+                  onSelect={() => openHit(hit.id)}
+                  className="gap-2"
+                >
+                  <span className="min-w-0 truncate">{hit.title || te('untitled')}</span>
+                  {hit.breadcrumb.length > 0 && (
+                    <span className="ms-auto min-w-0 truncate text-xs text-muted-foreground">
+                      {hit.breadcrumb.map((b) => b.title || te('untitled')).join(' / ')}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+        </CommandList>
+      </Command>
+    </CommandDialog>
   );
 }
 
