@@ -84,6 +84,8 @@ function fixupTsconfig(pkgDir) {
   if (!('extends' in cfg)) return;
   // 统一指向我们提供的 base（05 §2.2 第 2 步）
   cfg.extends = relative(pkgDir, join(OUT, 'tsconfig.base.json')).replace(/\\/g, '/');
+  // project references 会把 vendored 包拉进 tsc 构建图（AGENTS.md 命令红线），删掉
+  delete cfg.references;
   // 上游 paths/@blocksuite/* 自映射不需要（workspace 直解析），删掉避免漂移
   const compilerOptions = { ...cfg.compilerOptions };
   if (compilerOptions.paths && Object.keys(compilerOptions.paths).some((k) => k.startsWith('@blocksuite/'))) {

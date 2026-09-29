@@ -7,19 +7,5 @@
   },
   "include": [
     "./src"
-  ],
-  "references": [
-    {
-      "path": "../model"
-    },
-    {
-      "path": "../../framework/global"
-    },
-    {
-      "path": "../../framework/std"
-    },
-    {
-      "path": "../../framework/store"
-    }
   ]
 }

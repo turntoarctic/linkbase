@@ -7,13 +7,5 @@
   },
   "include": [
     "./src"
-  ],
-  "references": [
-    {
-      "path": "../global"
-    },
-    {
-      "path": "../sync"
-    }
   ]
 }

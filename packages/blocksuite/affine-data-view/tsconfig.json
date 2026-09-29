@@ -8,22 +8,5 @@
   },
   "include": [
     "./src"
-  ],
-  "references": [
-    {
-      "path": "../components"
-    },
-    {
-      "path": "../shared"
-    },
-    {
-      "path": "../../framework/global"
-    },
-    {
-      "path": "../../framework/std"
-    },
-    {
-      "path": "../../framework/store"
-    }
   ]
 }
