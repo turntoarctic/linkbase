@@ -212,7 +212,7 @@ function TreeItem({
         {/* + 建子页（hover 显示，位于 ⋯ 左侧） */}
         <SidebarMenuAction
           showOnHover
-          className="right-7"
+          className="right-7 cursor-pointer"
           aria-label={tw('addChildPage')}
           title={tw('addChildPage')}
           onClick={() => {
@@ -691,7 +691,7 @@ export function AppShell() {
                 aria-label={t('newPage')}
                 title={t('newPage')}
                 onClick={() => void createPage()}
-                className="flex size-4 items-center justify-center opacity-0 transition-opacity group-hover/label:opacity-100 focus-visible:opacity-100 hover:text-foreground"
+                className="flex size-4 cursor-pointer items-center justify-center opacity-0 transition-opacity group-hover/label:opacity-100 focus-visible:opacity-100 hover:text-foreground"
               >
                 <Plus className="size-4" />
               </button>
