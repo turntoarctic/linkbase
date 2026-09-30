@@ -28,6 +28,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -348,7 +355,20 @@ export function SettingsDialog({
             </SidebarContent>
           </Sidebar>
           <main className="flex h-[490px] flex-1 flex-col overflow-hidden">
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+            <header className="flex h-12 shrink-0 items-center px-6">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>{t('settings')}</BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>
+                      {sections.find((sec) => sec.id === section)?.label}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </header>
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6 pt-2">
               {section === 'account' && (
                 <div className="space-y-4">
                   <div className="rounded-lg bg-secondary p-4">
