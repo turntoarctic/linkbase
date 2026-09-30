@@ -804,7 +804,7 @@ export function AppShell() {
                   }
                 }}
                 placeholder={te('untitled')}
-                className="w-full bg-transparent px-[54px] pb-2 text-4xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40"
+                className="w-full bg-transparent px-[54px] pb-6 text-4xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40"
               />
               <div className="min-h-0 flex-1">
                 <Suspense fallback={null}>
