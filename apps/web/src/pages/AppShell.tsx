@@ -778,7 +778,12 @@ export function AppShell() {
                 onChange={(e) => setTitleDraft(e.target.value)}
                 onBlur={() => void saveTitle()}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') e.currentTarget.blur();
+                  // Enter：保存标题并切换到内容输入
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void saveTitle();
+                    editor?.focus();
+                  }
                 }}
                 placeholder={te('untitled')}
                 className="w-full bg-transparent px-[54px] pb-2 text-4xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40"
