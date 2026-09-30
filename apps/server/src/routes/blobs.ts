@@ -8,7 +8,7 @@ import * as blobsService from '../services/blobs';
 export function blobRoutes(deps: AppDeps) {
   const app = new Hono<AppState>();
 
-  app.post('/:wsId/blobs', requireAuth(deps), requireMember(deps), async (c) => {
+  app.post('/workspaces/:wsId/blobs', requireAuth(deps), requireMember(deps), async (c) => {
     const body = await c.req.parseBody();
     const file = body['file'];
     if (!(file instanceof File)) {

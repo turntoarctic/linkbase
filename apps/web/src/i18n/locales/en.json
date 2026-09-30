@@ -67,7 +67,13 @@
     "themeSystem": "System",
     "searchHintNav": "Navigate",
     "searchHintOpen": "Open",
-    "searchHintClose": "Close"
+    "searchHintClose": "Close",
+    "export": "Export",
+    "export_markdown": "Markdown (.md)",
+    "export_html": "HTML (.html)",
+    "export_docx": "Word document (.docx)",
+    "export_pdf": "PDF (.pdf)",
+    "exportPdfFailed": "PDF compilation failed"
   },
   "editor": {
     "untitled": "Untitled"

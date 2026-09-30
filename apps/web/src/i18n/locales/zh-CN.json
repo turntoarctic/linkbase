@@ -67,7 +67,13 @@
     "themeSystem": "跟随系统",
     "searchHintNav": "导航",
     "searchHintOpen": "打开",
-    "searchHintClose": "关闭"
+    "searchHintClose": "关闭",
+    "export": "导出",
+    "export_markdown": "Markdown (.md)",
+    "export_html": "HTML (.html)",
+    "export_docx": "Word 文档 (.docx)",
+    "export_pdf": "PDF (.pdf)",
+    "exportPdfFailed": "PDF 编译失败"
   },
   "editor": {
     "untitled": "无标题"

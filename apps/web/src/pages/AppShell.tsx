@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import type { PageMeta, PageTreeNode } from '@linkbase/contracts';
 import type { EditorBlock } from '@/features/editor/schema';
-import { ChevronDown, ChevronRight, LogOut, MoreHorizontal, Pencil, Plus, Search, Settings, Star, Tag as TagIcon, Trash2, X } from 'lucide-react';
+import type { BlockNoteEditor } from '@blocknote/core';
+import { exportDocument, type ExportFormat } from '@/features/editor/export';
+import { ChevronDown, ChevronRight, FileDown, LogOut, MoreHorizontal, Pencil, Plus, Search, Settings, Star, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { api, jsonBody } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/stores/auth';
@@ -394,6 +396,8 @@ export function AppShell() {
 
   // 编辑器：选中页 → GET 文档 JSON（BlockNote 块数组，05 §2）
   const [docData, setDocData] = useState<EditorBlock[] | null>(null);
+  const [editor, setEditor] = useState<BlockNoteEditor<any, any, any> | null>(null);
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
   useEffect(() => {
     if (!wsId || !selected || showTrash) {
       setDocData(null);
@@ -699,6 +703,36 @@ export function AppShell() {
           {!showTrash && wsId && selected && (
             <PageTags wsId={wsId} pageId={selected.id} />
           )}
+          {!showTrash && wsId && selected && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" size="icon" disabled={!editor || exporting !== null} title={t('export')}>
+                    <FileDown />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-44">
+                {(['markdown', 'html', 'docx', 'pdf'] as const).map((fmt) => (
+                  <DropdownMenuItem
+                    key={fmt}
+                    disabled={exporting !== null}
+                    onClick={() => {
+                      if (!editor || !wsId || !selected) return;
+                      setExporting(fmt);
+                      void exportDocument(editor, fmt, selected.title)
+                        .catch((err) => console.error('export failed:', err))
+                        .finally(() => setExporting(null));
+                    }}
+                  >
+                    <FileDown />
+                    {t(`export_${fmt}`)}
+                    {exporting === fmt && <span className="ms-auto text-xs text-muted-foreground">…</span>}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         <div className="flex-1">
@@ -710,16 +744,14 @@ export function AppShell() {
           ) : error ? (
             <div className="p-8 text-sm text-destructive">{error}</div>
           ) : selected && wsId && docData ? (
-            <div
-              className="h-full"
-              style={{ maxWidth: 'var(--width-content)' }}
-            >
+            <div className="h-full min-w-[480px]">
               <Suspense fallback={null}>
                 <EditorView
                   key={selected.id}
                   wsId={wsId}
                   pageId={selected.id}
                   initialData={docData}
+                  onReady={setEditor}
                 />
               </Suspense>
             </div>

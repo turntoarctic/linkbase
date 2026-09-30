@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuItems } from '@blocknote/react';
+import type { BlockNoteEditor } from '@blocknote/core';
 import { BlockNoteView } from '@blocknote/mantine';
 // 默认样式（官方 quickstart 标配）：Inter 字体 + Mantine UI 主题
 import '@blocknote/core/fonts/inter.css';
@@ -47,10 +48,13 @@ export function EditorView({
   wsId,
   pageId,
   initialData,
+  onReady,
 }: {
   wsId: string;
   pageId: string;
   initialData: EditorBlock[];
+  /** 编辑器实例就绪（含语言切换重建后）——供导出等外部能力使用 */
+  onReady?: (editor: BlockNoteEditor<any, any, any>) => void;
 }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savingRef = useRef<Promise<void>>(Promise.resolve());
@@ -117,6 +121,11 @@ export function EditorView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
+
+  useEffect(() => {
+    onReady?.(editor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
 
   // slash 菜单 = 默认项 + 多栏 + 数学（combineByGroup 保持分组相邻）
   const getSlashMenuItems = async (query: string) =>
