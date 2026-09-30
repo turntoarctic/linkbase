@@ -47,7 +47,10 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { SearchDialog, SettingsDialog, TagsDialog, TrashView } from './SidebarViews';
+import { SearchDialog } from '@/features/search/SearchDialog';
+import { SettingsDialog } from '@/features/settings/SettingsDialog';
+import { TagsDialog } from '@/features/tags/TagsDialog';
+import { TrashView } from '@/features/trash/TrashView';
 
 // BlockSuite 体量大，懒加载不进首屏包
 const EditorView = lazy(() =>
