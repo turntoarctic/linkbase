@@ -398,6 +398,9 @@ export function AppShell() {
   const [docData, setDocData] = useState<EditorBlock[] | null>(null);
   const [editor, setEditor] = useState<BlockNoteEditor<any, any, any> | null>(null);
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
+  // 页面标题（内容区顶部大标题）：切页时同步；聚焦中不被树刷新回写
+  const [titleDraft, setTitleDraft] = useState('');
+  const titleRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!wsId || !selected || showTrash) {
       setDocData(null);
@@ -416,6 +419,30 @@ export function AppShell() {
       alive = false;
     };
   }, [wsId, selected, showTrash]);
+
+  // 标题草稿随页面切换同步；非聚焦态才吃树刷新（避免打断输入）
+  useEffect(() => {
+    if (document.activeElement !== titleRef.current) {
+      setTitleDraft(selected?.title ?? '');
+    }
+  }, [selected?.id, selected?.title]);
+
+  // 空页（新建）自动聚焦标题，Notion 式
+  useEffect(() => {
+    if (docData && docData.length === 0) titleRef.current?.focus();
+  }, [docData, selected?.id]);
+
+  const saveTitle = async () => {
+    if (!wsId || !selected) return;
+    const next = titleDraft.trim();
+    if (next === selected.title) return;
+    await api(`/workspaces/${wsId}/pages/${selected.id}`, {
+      method: 'PATCH',
+      ...jsonBody({ title: next }),
+    });
+    await loadTree(wsId);
+    void loadFavorites(wsId);
+  };
 
   useEffect(() => {
     void (async () => {
@@ -744,16 +771,29 @@ export function AppShell() {
           ) : error ? (
             <div className="p-8 text-sm text-destructive">{error}</div>
           ) : selected && wsId && docData ? (
-            <div className="h-full min-w-[480px]">
-              <Suspense fallback={null}>
-                <EditorView
-                  key={selected.id}
-                  wsId={wsId}
-                  pageId={selected.id}
-                  initialData={docData}
-                  onReady={setEditor}
-                />
-              </Suspense>
+            <div className="flex h-full min-w-[480px] flex-col">
+              <input
+                ref={titleRef}
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={() => void saveTitle()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur();
+                }}
+                placeholder={te('untitled')}
+                className="w-full bg-transparent pb-2 text-4xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40"
+              />
+              <div className="min-h-0 flex-1">
+                <Suspense fallback={null}>
+                  <EditorView
+                    key={selected.id}
+                    wsId={wsId}
+                    pageId={selected.id}
+                    initialData={docData}
+                    onReady={setEditor}
+                  />
+                </Suspense>
+              </div>
             </div>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
