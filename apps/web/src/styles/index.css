@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================
    tokens —— 06 §5.1 全应用唯一的主题定义处（shadcn 标准集 + Linkbase 扩展集）
    换风格 = 换值不换名；组件只允许语义 token，禁止裸色值。
@@ -58,7 +60,9 @@
   --background: #191919;
   --foreground: #d4d4d4;
   --card: #1f1f1f;
+  --card-foreground: #d4d4d4;
   --popover: #1f1f1f;
+  --popover-foreground: #d4d4d4;
   --sidebar: #202020;
   --sidebar-foreground: #d4d4d4;
   --sidebar-accent: #2c2c2c;
@@ -66,9 +70,11 @@
   --muted: #2c2c2c;
   --muted-foreground: #9b9a97;
   --accent: #333333;
+  --accent-foreground: #d4d4d4;
   --border: #2f2f2f;
   --input: #3a3a3a;
   --secondary: #262626;
+  --secondary-foreground: #d4d4d4;
 }
 
 /* ③ Tailwind 4 映射（与 shadcn 生成物一致） */

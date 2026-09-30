@@ -60,7 +60,14 @@
     "tagPagesEmpty": "No pages with this tag",
     "settings": "Settings",
     "settingsName": "Name",
-    "nameSaved": "Saved"
+    "nameSaved": "Saved",
+    "settingsTheme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "searchHintNav": "Navigate",
+    "searchHintOpen": "Open",
+    "searchHintClose": "Close"
   },
   "editor": {
     "untitled": "Untitled"

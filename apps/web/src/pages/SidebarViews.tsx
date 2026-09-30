@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PageMeta, Tag } from '@linkbase/contracts';
-import { Plus, Settings, Tag as TagIcon, Trash2 } from 'lucide-react';
+import { FileText, Moon, Monitor, Plus, Settings, Sun, Tag as TagIcon, Trash2 } from 'lucide-react';
 import { api, jsonBody } from '@/lib/api';
+import { getThemePref, setThemePref, type ThemePref } from '@/lib/theme';
+import i18n, { supportedLocales, type AppLocale } from '@/i18n';
+import { changeLocale } from '@/components/LanguageSwitcher';
+import { cn } from '@/lib/cn';
 import { TAG_COLORS } from '@/components/page-tags';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 /** 搜索结果（GET /workspaces/:wsId/search，10 §7） */
 interface SearchHit {
@@ -100,8 +103,36 @@ export function SearchDialog({
           placeholder={t('searchPlaceholder')}
         />
         <CommandList>
+          {/* 有查询：命中优先，快捷动作沉底；空查询：仅快捷动作 */}
+          {q.trim() && hits.length === 0 && (
+            <CommandEmpty>{t('searchNoResults')}</CommandEmpty>
+          )}
+          {hits.length > 0 && (
+            <CommandGroup heading={t('pages')}>
+              {hits.map((hit) => (
+                <CommandItem
+                  key={hit.id}
+                  value={hit.id}
+                  onSelect={() => openHit(hit.id)}
+                  className="gap-2 py-2"
+                >
+                  <FileText className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm">
+                      {hit.title || te('untitled')}
+                    </span>
+                    {hit.breadcrumb.length > 0 && (
+                      <span className="truncate text-xs text-muted-foreground">
+                        {hit.breadcrumb.map((b) => b.title || te('untitled')).join(' / ')}
+                      </span>
+                    )}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
           {/* 快捷动作 */}
-          <CommandGroup heading={t('quickActions')}>
+          <CommandGroup heading={q.trim() ? undefined : t('quickActions')}>
             <CommandItem value="action:new-page" onSelect={() => run(onCreatePage)} className="gap-2">
               <Plus />
               {t('newPage')}
@@ -119,31 +150,34 @@ export function SearchDialog({
               {t('settings')}
             </CommandItem>
           </CommandGroup>
-          {q.trim() && hits.length === 0 && (
-            <CommandEmpty>{t('searchNoResults')}</CommandEmpty>
-          )}
-          {hits.length > 0 && (
-            <CommandGroup heading={t('pages')}>
-              {hits.map((hit) => (
-                <CommandItem
-                  key={hit.id}
-                  value={hit.id}
-                  onSelect={() => openHit(hit.id)}
-                  className="gap-2"
-                >
-                  <span className="min-w-0 truncate">{hit.title || te('untitled')}</span>
-                  {hit.breadcrumb.length > 0 && (
-                    <span className="ms-auto min-w-0 truncate text-xs text-muted-foreground">
-                      {hit.breadcrumb.map((b) => b.title || te('untitled')).join(' / ')}
-                    </span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
+          {/* 快捷键提示条 */}
+          <div className="flex items-center gap-4 border-t px-3 py-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Kbd>↑</Kbd>
+              <Kbd>↓</Kbd>
+              {t('searchHintNav')}
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd>↵</Kbd>
+              {t('searchHintOpen')}
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd>esc</Kbd>
+              {t('searchHintClose')}
+            </span>
+          </div>
         </CommandList>
       </Command>
     </CommandDialog>
+  );
+}
+
+/** 快捷键小键帽（搜索弹窗底部提示条用） */
+function Kbd({ children }: { children: string }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-sans text-[10px] font-medium text-muted-foreground">
+      {children}
+    </kbd>
   );
 }
 
@@ -214,7 +248,7 @@ export function TrashView({ wsId, onChanged }: { wsId: string; onChanged: () => 
   );
 }
 
-/** 设置：弹窗（昵称 + 语言） */
+/** 设置：弹窗（昵称 + 主题 + 语言） */
 export function SettingsDialog({
   open,
   onOpenChange,
@@ -230,11 +264,13 @@ export function SettingsDialog({
   const { t: tc } = useTranslation('common');
   const [draft, setDraft] = useState(name);
   const [saved, setSaved] = useState(false);
+  const [theme, setTheme] = useState<ThemePref>(() => getThemePref());
 
   useEffect(() => {
     if (open) {
       setDraft(name);
       setSaved(false);
+      setTheme(getThemePref());
     }
   }, [open, name]);
 
@@ -244,6 +280,20 @@ export function SettingsDialog({
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  const localeLabel = (lng: string) => {
+    try {
+      return new Intl.DisplayNames([lng], { type: 'language' }).of(lng) ?? lng;
+    } catch {
+      return lng;
+    }
+  };
+
+  const themeOptions: { value: ThemePref; label: string; icon: typeof Sun }[] = [
+    { value: 'light', label: t('themeLight'), icon: Sun },
+    { value: 'dark', label: t('themeDark'), icon: Moon },
+    { value: 'system', label: t('themeSystem'), icon: Monitor },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -267,8 +317,49 @@ export function SettingsDialog({
             </div>
           </div>
           <div>
+            <div className="mb-2 text-sm text-muted-foreground">{t('settingsTheme')}</div>
+            <div className="flex gap-1">
+              {themeOptions.map(({ value, label, icon: Icon }) => (
+                <Button
+                  key={value}
+                  variant="outline"
+                  size="sm"
+                  aria-pressed={theme === value}
+                  className={cn(
+                    'flex-1 gap-1.5',
+                    theme === value && 'border-primary bg-accent text-accent-foreground',
+                  )}
+                  onClick={() => {
+                    setTheme(value);
+                    setThemePref(value);
+                  }}
+                >
+                  <Icon className="size-3.5" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div>
             <div className="mb-2 text-sm text-muted-foreground">{tc('language')}</div>
-            <LanguageSwitcher />
+            <div className="flex gap-1">
+              {supportedLocales.map((lng) => (
+                <Button
+                  key={lng}
+                  variant="outline"
+                  size="sm"
+                  aria-pressed={i18n.resolvedLanguage === lng}
+                  className={cn(
+                    'flex-1',
+                    i18n.resolvedLanguage === lng &&
+                      'border-primary bg-accent text-accent-foreground',
+                  )}
+                  onClick={() => void changeLocale(lng as AppLocale)}
+                >
+                  {localeLabel(lng)}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       </DialogContent>
