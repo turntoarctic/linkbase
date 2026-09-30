@@ -20,6 +20,17 @@ export function applyTheme(pref: ThemePref): void {
 export function setThemePref(pref: ThemePref): void {
   localStorage.setItem(KEY, pref);
   applyTheme(pref);
+  window.dispatchEvent(new Event('linkbase.theme'));
+}
+
+/** 主题订阅（BlockNote 视图等非 React-state 场景跟随切换） */
+export function subscribeTheme(cb: () => void): () => void {
+  window.addEventListener('linkbase.theme', cb);
+  mq?.addEventListener('change', cb);
+  return () => {
+    window.removeEventListener('linkbase.theme', cb);
+    mq?.removeEventListener('change', cb);
+  };
 }
 
 /** 应用启动时调用：恢复偏好 + 跟随系统变化（仅 system 档） */

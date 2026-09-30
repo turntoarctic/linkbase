@@ -5,7 +5,7 @@
  * UI 完整形态（05 §3）：slash 菜单（默认 + 多栏 + 数学项）、格式工具栏、侧栏拖拽手柄、
  * 文件面板（uploadFile → blobs）、代码高亮（Shiki）、表格手柄，全部内建。
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuItems } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
 // 默认样式（官方 quickstart 标配）：Inter 字体 + Mantine UI 主题
@@ -26,6 +26,7 @@ import {
 } from '@blocknote/math-block';
 import i18n from '@/i18n';
 import { api } from '@/lib/api';
+import { subscribeTheme } from '@/lib/theme';
 import { schema, type EditorBlock } from './schema';
 
 const SAVE_DEBOUNCE_MS = 800;
@@ -55,6 +56,11 @@ export function EditorView({
   const savingRef = useRef<Promise<void>>(Promise.resolve());
 
   const locale = (i18n.resolvedLanguage ?? 'en').split('-')[0] ?? 'en';
+  // BlockNote 视图跟随应用主题（.dark 类）
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    () => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'),
+  );
   const editor = useCreateBlockNote(
     {
       schema,
@@ -119,7 +125,7 @@ export function EditorView({
     );
 
   return (
-    <BlockNoteView editor={editor} theme="light" slashMenu={false} onChange={schedule}>
+    <BlockNoteView editor={editor} theme={theme} slashMenu={false} onChange={schedule}>
       <SuggestionMenuController triggerCharacter="/" getItems={getSlashMenuItems} />
     </BlockNoteView>
   );
