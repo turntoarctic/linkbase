@@ -634,12 +634,6 @@ export function AppShell() {
                     <span>{tc('settings')}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem className="mt-1">
-                  <SidebarMenuButton tooltip={t('newPage')} onClick={() => void createPage()}>
-                    <Plus />
-                    <span>{t('newPage')}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -677,7 +671,18 @@ export function AppShell() {
 
           {/* 页面树 */}
           <SidebarGroup>
-            <SidebarGroupLabel>{t('pages')}</SidebarGroupLabel>
+            <SidebarGroupLabel className="group/label justify-between">
+              {t('pages')}
+              <button
+                type="button"
+                aria-label={t('newPage')}
+                title={t('newPage')}
+                onClick={() => void createPage()}
+                className="opacity-0 transition-opacity group-hover/label:opacity-100 focus-visible:opacity-100 hover:text-foreground"
+              >
+                <Plus />
+              </button>
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {tree.map((node) => (
