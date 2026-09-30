@@ -69,6 +69,13 @@ export function EditorView({
       extensions: [syntaxHighlighter],
       dropCursor: multiColumnDropCursor,
       dictionary: editorLocales(i18n.resolvedLanguage ?? 'en'),
+      // 表格完整能力（05 §2.1）：表头行列、单元格底色/字色、拆分合并单元格
+      tables: {
+        splitCells: true,
+        cellBackgroundColor: true,
+        cellTextColor: true,
+        headers: true,
+      },
       uploadFile: async (file: File) => {
         // 复用 blobs 内容寻址端点（10 §5.3）；GET 免鉴权（<img> 无法带 Bearer 头）
         const fd = new FormData();

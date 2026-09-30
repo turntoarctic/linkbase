@@ -26,7 +26,7 @@
 | | `divider` | 分割线（空行 `---` 快捷） |
 | 列表 | `bulletListItem` / `numberedListItem` / `checkListItem` | 无限嵌套 |
 | 代码 | `codeBlock` | **语法高亮**（`@blocknote/code-block`，Shiki 多语言） |
-| 表格 | `table` | 行列增删手柄、表头 |
+| 表格 | `table` | **完整能力已开**（`tables` 选项）：表头行/列、单元格底色/字色、拆分合并单元格、行列增删手柄 |
 | 嵌入 | `image` / `video` / `audio` / `file` | 经 `uploadFile` 走 blobs（§5） |
 | 多栏 | `columnList` / `column` | `@blocknote/xl-multi-column`；侧栏拖拽跨栏 |
 | 数学 | `mathBlock` + 行内 `math` | `@blocknote/math-block`，LaTeX → KaTeX 渲染 |

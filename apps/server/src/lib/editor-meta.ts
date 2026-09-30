@@ -24,6 +24,7 @@ function collect(value: unknown, out: string[]): void {
     if (typeof r.text === 'string') collect(r.text, out); // StyledText / 纯文本 cell
     if (r.content !== undefined) collect(r.content, out); // 块载荷 / tableContent
     if (r.cells !== undefined) collect(r.cells, out); // 表格行
+    if (r.rows !== undefined) collect(r.rows, out); // tableContent → rows
     if (r.children !== undefined) collect(r.children, out); // 嵌套子块
   }
 }
