@@ -37,13 +37,6 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from '@/components/ui/sidebar';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
- BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 
 /** 搜索结果（GET /workspaces/:wsId/search，10 §7） */
 interface SearchHit {
@@ -355,27 +348,14 @@ export function SettingsDialog({
             </SidebarContent>
           </Sidebar>
           <main className="flex h-[490px] flex-1 flex-col overflow-hidden">
-            <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>{t('settings')}</BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>
-                      {sections.find((sec) => sec.id === section)?.label}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </header>
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
               {section === 'account' && (
-                <div className="space-y-5">
-                  <div>
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-secondary p-4">
                     <div className="mb-2 text-sm text-muted-foreground">{t('settingsEmail')}</div>
                     <div className="truncate text-sm">{email || '—'}</div>
                   </div>
-                  <div>
+                  <div className="rounded-lg bg-secondary p-4">
                     <div className="mb-2 text-sm text-muted-foreground">{t('settingsName')}</div>
                     <div className="flex items-center gap-2">
                       <Input value={draft} onChange={(e) => setDraft(e.target.value)} />
@@ -394,7 +374,7 @@ export function SettingsDialog({
                 </div>
               )}
               {section === 'theme' && (
-                <div>
+                <div className="rounded-lg bg-secondary p-4">
                   <div className="mb-2 text-sm text-muted-foreground">{t('settingsTheme')}</div>
                   <div className="flex gap-1">
                     {themeOptions.map(({ value, label, icon: Icon }) => (
@@ -420,7 +400,7 @@ export function SettingsDialog({
                 </div>
               )}
               {section === 'preferences' && (
-                <div>
+                <div className="rounded-lg bg-secondary p-4">
                   <div className="mb-2 text-sm text-muted-foreground">{tc('language')}</div>
                   <div className="flex gap-1">
                     {supportedLocales.map((lng) => (
@@ -448,12 +428,12 @@ export function SettingsDialog({
                 </div>
               )}
               {section === 'about' && (
-                <div className="space-y-5 text-sm">
-                  <div>
+                <div className="space-y-4 text-sm">
+                  <div className="rounded-lg bg-secondary p-4">
                     <div className="mb-1 text-sm text-muted-foreground">{t('aboutVersion')}</div>
                     <div>Linkbase v{pkg.version}</div>
                   </div>
-                  <div>
+                  <div className="rounded-lg bg-secondary p-4">
                     <div className="mb-1 text-sm text-muted-foreground">BlockNote</div>
                     <div>
                       v{pkg.dependencies['@blocknote/core']} ·{' '}
