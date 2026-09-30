@@ -201,7 +201,7 @@ function TreeItem({
                 }}
                 className="hidden size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground group-hover/menu-button:flex hover:text-foreground"
               >
-                <ChevronRight className="size-3.5 transition-transform duration-200 group-data-[open]/collapsible:rotate-90" />
+                <ChevronRight className={cn("size-3.5 transition-transform duration-200", open && "rotate-90")} />
               </span>
             </>
           ) : (
