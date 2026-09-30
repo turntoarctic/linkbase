@@ -691,9 +691,9 @@ export function AppShell() {
                 aria-label={t('newPage')}
                 title={t('newPage')}
                 onClick={() => void createPage()}
-                className="opacity-0 transition-opacity group-hover/label:opacity-100 focus-visible:opacity-100 hover:text-foreground"
+                className="flex size-4 items-center justify-center opacity-0 transition-opacity group-hover/label:opacity-100 focus-visible:opacity-100 hover:text-foreground"
               >
-                <Plus />
+                <Plus className="size-4" />
               </button>
             </SidebarGroupLabel>
             <SidebarGroupContent>
