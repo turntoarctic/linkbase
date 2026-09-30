@@ -77,7 +77,8 @@
     "settingsAccount": "账号",
     "settingsPreferences": "偏好",
     "settingsNotifications": "通知",
-    "notificationsComingSoon": "通知功能将在后续版本推出"
+    "notificationsComingSoon": "通知功能将在后续版本推出",
+    "moreActions": "更多操作"
   },
   "editor": {
     "untitled": "无标题"

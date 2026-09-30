@@ -77,7 +77,8 @@
     "settingsAccount": "Account",
     "settingsPreferences": "Preferences",
     "settingsNotifications": "Notifications",
-    "notificationsComingSoon": "Notifications are coming in a future release"
+    "notificationsComingSoon": "Notifications are coming in a future release",
+    "moreActions": "More actions"
   },
   "editor": {
     "untitled": "Untitled"
