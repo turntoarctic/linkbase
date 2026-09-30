@@ -58,7 +58,8 @@ export function EditorView({
   const editor = useCreateBlockNote(
     {
       schema,
-      initialContent: initialData,
+      // BlockNote 不接受空数组 initialContent（报错 must be non-empty）；空页省略即可
+      ...(initialData.length > 0 ? { initialContent: initialData } : {}),
       extensions: [syntaxHighlighter],
       dropCursor: multiColumnDropCursor,
       dictionary: editorLocales(i18n.resolvedLanguage ?? 'en'),
