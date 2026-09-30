@@ -4,8 +4,7 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*",
-    "packages/blocksuite/**"
+    "packages/*"
   ],
   "catalog": {
     "react": "^19.3.0",
@@ -24,7 +23,6 @@
     "drizzle-orm": "^0.45.3",
     "drizzle-kit": "^0.31.11",
     "pino": "^10.3.1",
-    "yjs": "^13.6.33",
     "@tanstack/react-query": "^5.104.0",
     "react-router": "^8.4.0",
     "zustand": "^5.0.15",
@@ -39,7 +37,6 @@
     "tailwind-merge": "^3.3.1"
   },
   "overrides": {
-    "yjs": "13.6.33",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -53,8 +50,8 @@
     "dev": "bun run --filter @linkbase/server --filter @linkbase/web --parallel dev",
     "build": "bun run --filter @linkbase/web build",
     "typecheck": "bun run --filter '*' typecheck",
-    "test": "bun test apps/server packages/database packages/ydoc packages/contracts",
-    "check": "bun run typecheck && bun test apps/server packages && node scripts/check-i18n.mjs",
+    "test": "bun test apps/server packages/database packages/contracts",
+    "check": "bun run typecheck && bun test apps/server packages/database packages/contracts && node scripts/check-i18n.mjs",
     "serve": "bun apps/server/src/index.ts",
     "db:generate": "bun run --filter @linkbase/database db:generate",
     "db:migrate": "bun run --filter @linkbase/database db:migrate",
