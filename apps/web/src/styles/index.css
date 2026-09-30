@@ -154,6 +154,9 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+.linkbase-editor .bn-editor {
+  padding-inline: 0; /* 与页面大标题左缘对齐（06 §6 桥接） */
+}
 .linkbase-editor .bn-block-outer,
 .linkbase-editor .bn-block-content {
   max-width: 100%; /* 宽度由外层内容列（--width-content）控制 */
