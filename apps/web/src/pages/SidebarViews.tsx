@@ -312,7 +312,7 @@ export function SettingsDialog({
   ];
 
   const nav = (
-    <nav className="flex w-36 shrink-0 flex-col gap-0.5 border-r pr-2">
+    <nav className="flex w-44 shrink-0 flex-col gap-1 border-r pr-3">
       {sections.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
@@ -320,7 +320,7 @@ export function SettingsDialog({
           onClick={() => setSection(id)}
           aria-pressed={section === id}
           className={cn(
-            'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm',
+            'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm',
             section === id
               ? 'bg-accent font-medium text-accent-foreground'
               : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground',
@@ -335,11 +335,11 @@ export function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-4xl"
         <DialogHeader>
           <DialogTitle>{t('settings')}</DialogTitle>
         </DialogHeader>
-        <div className="flex min-h-72 gap-4">
+        <div className="flex min-h-[26rem] gap-6">
           {nav}
           <div className="min-w-0 flex-1">
             {section === 'account' && (
