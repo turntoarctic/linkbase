@@ -73,7 +73,11 @@
     "export_html": "HTML (.html)",
     "export_docx": "Word 文档 (.docx)",
     "export_pdf": "PDF (.pdf)",
-    "exportPdfFailed": "PDF 编译失败"
+    "exportPdfFailed": "PDF 编译失败",
+    "settingsAccount": "账号",
+    "settingsPreferences": "偏好",
+    "settingsNotifications": "通知",
+    "notificationsComingSoon": "通知功能将在后续版本推出"
   },
   "editor": {
     "untitled": "无标题"

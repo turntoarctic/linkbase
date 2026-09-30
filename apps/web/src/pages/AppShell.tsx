@@ -55,7 +55,7 @@ const EditorView = lazy(() =>
 );
 
 interface Me {
-  user: { id: string; name: string; locale: 'zh-CN' | 'en' | null };
+  user: { id: string; name: string; email: string; locale: 'zh-CN' | 'en' | null };
   workspaces: { id: string; name: string; role: string }[];
 }
 
@@ -787,6 +787,7 @@ export function AppShell() {
           open={dialog === 'settings'}
           onOpenChange={(o) => setDialog(o ? 'settings' : null)}
           name={me?.user.name ?? ''}
+          email={me?.user.email}
           onSaved={(n) => setMe((m) => (m ? { ...m, user: { ...m.user, name: n } } : m))}
         />
         <Dialog open={renameNode !== null} onOpenChange={(o) => !o && setRenameNode(null)}>

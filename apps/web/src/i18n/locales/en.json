@@ -73,7 +73,11 @@
     "export_html": "HTML (.html)",
     "export_docx": "Word document (.docx)",
     "export_pdf": "PDF (.pdf)",
-    "exportPdfFailed": "PDF compilation failed"
+    "exportPdfFailed": "PDF compilation failed",
+    "settingsAccount": "Account",
+    "settingsPreferences": "Preferences",
+    "settingsNotifications": "Notifications",
+    "notificationsComingSoon": "Notifications are coming in a future release"
   },
   "editor": {
     "untitled": "Untitled"

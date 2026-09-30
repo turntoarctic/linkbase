@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PageMeta, Tag } from '@linkbase/contracts';
-import { FileText, Moon, Monitor, Plus, Settings, Sun, Tag as TagIcon, Trash2 } from 'lucide-react';
+import { Bell, FileText, Info, Moon, Monitor, Palette, Plus, Settings, SlidersHorizontal, Sun, Tag as TagIcon, Trash2, User } from 'lucide-react';
+import pkg from '../../package.json';
 import { api, jsonBody } from '@/lib/api';
 import { getThemePref, setThemePref, type ThemePref } from '@/lib/theme';
 import i18n, { supportedLocales, type AppLocale } from '@/i18n';
@@ -248,26 +249,33 @@ export function TrashView({ wsId, onChanged }: { wsId: string; onChanged: () => 
   );
 }
 
-/** 设置：弹窗（昵称 + 主题 + 语言） */
+/** 设置分区（左导航右面板） */
+type SettingsSection = 'account' | 'theme' | 'preferences' | 'notifications' | 'about';
+
+/** 设置弹窗：左侧分区导航 + 右侧面板 */
 export function SettingsDialog({
   open,
   onOpenChange,
   name,
+  email,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   name: string;
+  email?: string;
   onSaved: (name: string) => void;
 }) {
   const { t } = useTranslation('workspace');
   const { t: tc } = useTranslation('common');
+  const [section, setSection] = useState<SettingsSection>('account');
+  const [theme, setTheme] = useState<ThemePref>(() => getThemePref());
   const [draft, setDraft] = useState(name);
   const [saved, setSaved] = useState(false);
-  const [theme, setTheme] = useState<ThemePref>(() => getThemePref());
 
   useEffect(() => {
     if (open) {
+      setSection('account');
       setDraft(name);
       setSaved(false);
       setTheme(getThemePref());
@@ -295,71 +303,145 @@ export function SettingsDialog({
     { value: 'system', label: t('themeSystem'), icon: Monitor },
   ];
 
+  const sections: { id: SettingsSection; label: string; icon: typeof Sun }[] = [
+    { id: 'account', label: t('settingsAccount'), icon: User },
+    { id: 'theme', label: t('settingsTheme'), icon: Palette },
+    { id: 'preferences', label: t('settingsPreferences'), icon: SlidersHorizontal },
+    { id: 'notifications', label: t('settingsNotifications'), icon: Bell },
+    { id: 'about', label: t('settingsAbout'), icon: Info },
+  ];
+
+  const nav = (
+    <nav className="flex w-36 shrink-0 flex-col gap-0.5 border-r pr-2">
+      {sections.map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => setSection(id)}
+          aria-pressed={section === id}
+          className={cn(
+            'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm',
+            section === id
+              ? 'bg-accent font-medium text-accent-foreground'
+              : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground',
+          )}
+        >
+          <Icon className="size-4" />
+          {label}
+        </button>
+      ))}
+    </nav>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('settings')}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-5">
-          <div>
-            <div className="mb-2 text-sm text-muted-foreground">{t('settingsName')}</div>
-            <div className="flex items-center gap-2">
-              <Input value={draft} onChange={(e) => setDraft(e.target.value)} />
-              <Button
-                size="sm"
-                disabled={!draft.trim() || draft === name}
-                onClick={() => void save()}
-              >
-                {tc('save')}
-              </Button>
-              {saved && <span className="text-sm text-muted-foreground">{t('nameSaved')}</span>}
-            </div>
-          </div>
-          <div>
-            <div className="mb-2 text-sm text-muted-foreground">{t('settingsTheme')}</div>
-            <div className="flex gap-1">
-              {themeOptions.map(({ value, label, icon: Icon }) => (
-                <Button
-                  key={value}
-                  variant="outline"
-                  size="sm"
-                  aria-pressed={theme === value}
-                  className={cn(
-                    'flex-1 gap-1.5',
-                    theme === value && 'border-primary bg-accent text-accent-foreground',
-                  )}
-                  onClick={() => {
-                    setTheme(value);
-                    setThemePref(value);
-                  }}
-                >
-                  <Icon className="size-3.5" />
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="mb-2 text-sm text-muted-foreground">{tc('language')}</div>
-            <div className="flex gap-1">
-              {supportedLocales.map((lng) => (
-                <Button
-                  key={lng}
-                  variant="outline"
-                  size="sm"
-                  aria-pressed={i18n.resolvedLanguage === lng}
-                  className={cn(
-                    'flex-1',
-                    i18n.resolvedLanguage === lng &&
-                      'border-primary bg-accent text-accent-foreground',
-                  )}
-                  onClick={() => void changeLocale(lng as AppLocale)}
-                >
-                  {localeLabel(lng)}
-                </Button>
-              ))}
-            </div>
+        <div className="flex min-h-72 gap-4">
+          {nav}
+          <div className="min-w-0 flex-1">
+            {section === 'account' && (
+              <div className="space-y-5">
+                <div>
+                  <div className="mb-2 text-sm text-muted-foreground">{t('settingsEmail')}</div>
+                  <div className="truncate text-sm">{email || '—'}</div>
+                </div>
+                <div>
+                  <div className="mb-2 text-sm text-muted-foreground">{t('settingsName')}</div>
+                  <div className="flex items-center gap-2">
+                    <Input value={draft} onChange={(e) => setDraft(e.target.value)} />
+                    <Button
+                      size="sm"
+                      disabled={!draft.trim() || draft === name}
+                      onClick={() => void save()}
+                    >
+                      {tc('save')}
+                    </Button>
+                    {saved && (
+                      <span className="text-sm text-muted-foreground">{t('nameSaved')}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {section === 'theme' && (
+              <div>
+                <div className="mb-2 text-sm text-muted-foreground">{t('settingsTheme')}</div>
+                <div className="flex gap-1">
+                  {themeOptions.map(({ value, label, icon: Icon }) => (
+                    <Button
+                      key={value}
+                      variant="outline"
+                      size="sm"
+                      aria-pressed={theme === value}
+                      className={cn(
+                        'flex-1 gap-1.5',
+                        theme === value && 'border-primary bg-accent text-accent-foreground',
+                      )}
+                      onClick={() => {
+                        setTheme(value);
+                        setThemePref(value);
+                      }}
+                    >
+                      <Icon className="size-3.5" />
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {section === 'preferences' && (
+              <div>
+                <div className="mb-2 text-sm text-muted-foreground">{tc('language')}</div>
+                <div className="flex gap-1">
+                  {supportedLocales.map((lng) => (
+                    <Button
+                      key={lng}
+                      variant="outline"
+                      size="sm"
+                      aria-pressed={i18n.resolvedLanguage === lng}
+                      className={cn(
+                        'flex-1',
+                        i18n.resolvedLanguage === lng &&
+                          'border-primary bg-accent text-accent-foreground',
+                      )}
+                      onClick={() => void changeLocale(lng as AppLocale)}
+                    >
+                      {localeLabel(lng)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {section === 'notifications' && (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                {t('notificationsComingSoon')}
+              </div>
+            )}
+            {section === 'about' && (
+              <div className="space-y-5 text-sm">
+                <div>
+                  <div className="mb-1 text-sm text-muted-foreground">{t('aboutVersion')}</div>
+                  <div>Linkbase v{pkg.version}</div>
+                </div>
+                <div>
+                  <div className="mb-1 text-sm text-muted-foreground">BlockNote</div>
+                  <div>
+                    v{pkg.dependencies['@blocknote/core']} ·{' '}
+                    <a
+                      href="https://www.blocknotejs.org/docs"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      blocknotejs.org/docs
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
