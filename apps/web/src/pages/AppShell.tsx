@@ -209,6 +209,19 @@ function TreeItem({
           )}
           <span className="truncate">{title}</span>
         </SidebarMenuButton>
+        {/* + 建子页（hover 显示，位于 ⋯ 左侧） */}
+        <SidebarMenuAction
+          showOnHover
+          className="right-7"
+          aria-label={tw('addChildPage')}
+          title={tw('addChildPage')}
+          onClick={() => {
+            setOpen(true);
+            onAddChild(node);
+          }}
+        >
+          <Plus />
+        </SidebarMenuAction>
         {/* ⋯ 菜单：建子页 / 重命名 / 收藏 / 移入回收站 */}
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
