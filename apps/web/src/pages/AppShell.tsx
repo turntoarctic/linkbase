@@ -147,7 +147,7 @@ function TreeItem({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="group/collapsible">
-      <SidebarMenuItem className="my-1">
+      <SidebarMenuItem className="mt-0.5">
         <SidebarMenuButton
           tooltip={title}
           isActive={selectedId === node.id}
