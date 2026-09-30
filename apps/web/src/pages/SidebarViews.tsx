@@ -23,9 +23,27 @@ import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+} from '@/components/ui/sidebar';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+ BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 /** 搜索结果（GET /workspaces/:wsId/search，10 §7） */
 interface SearchHit {
@@ -311,145 +329,154 @@ export function SettingsDialog({
     { id: 'about', label: t('settingsAbout'), icon: Info },
   ];
 
-  const nav = (
-    <nav className="flex w-44 shrink-0 flex-col gap-1 border-r pr-3">
-      {sections.map(({ id, label, icon: Icon }) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => setSection(id)}
-          aria-pressed={section === id}
-          className={cn(
-            'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm',
-            section === id
-              ? 'bg-accent font-medium text-accent-foreground'
-              : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground',
-          )}
-        >
-          <Icon className="size-4" />
-          {label}
-        </button>
-      ))}
-    </nav>
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>{t('settings')}</DialogTitle>
-        </DialogHeader>
-        <div className="flex min-h-[26rem] gap-6">
-          {nav}
-          <div className="min-w-0 flex-1">
-            {section === 'account' && (
-              <div className="space-y-5">
-                <div>
-                  <div className="mb-2 text-sm text-muted-foreground">{t('settingsEmail')}</div>
-                  <div className="truncate text-sm">{email || '—'}</div>
-                </div>
-                <div>
-                  <div className="mb-2 text-sm text-muted-foreground">{t('settingsName')}</div>
-                  <div className="flex items-center gap-2">
-                    <Input value={draft} onChange={(e) => setDraft(e.target.value)} />
-                    <Button
-                      size="sm"
-                      disabled={!draft.trim() || draft === name}
-                      onClick={() => void save()}
-                    >
-                      {tc('save')}
-                    </Button>
-                    {saved && (
-                      <span className="text-sm text-muted-foreground">{t('nameSaved')}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            {section === 'theme' && (
-              <div>
-                <div className="mb-2 text-sm text-muted-foreground">{t('settingsTheme')}</div>
-                <div className="flex gap-1">
-                  {themeOptions.map(({ value, label, icon: Icon }) => (
-                    <Button
-                      key={value}
-                      variant="outline"
-                      size="sm"
-                      aria-pressed={theme === value}
-                      className={cn(
-                        'flex-1 gap-1.5',
-                        theme === value && 'border-primary bg-accent text-accent-foreground',
-                      )}
-                      onClick={() => {
-                        setTheme(value);
-                        setThemePref(value);
-                      }}
-                    >
-                      <Icon className="size-3.5" />
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {section === 'preferences' && (
-              <div>
-                <div className="mb-2 text-sm text-muted-foreground">{tc('language')}</div>
-                <div className="flex gap-1">
-                  {supportedLocales.map((lng) => (
-                    <Button
-                      key={lng}
-                      variant="outline"
-                      size="sm"
-                      aria-pressed={i18n.resolvedLanguage === lng}
-                      className={cn(
-                        'flex-1',
-                        i18n.resolvedLanguage === lng &&
-                          'border-primary bg-accent text-accent-foreground',
-                      )}
-                      onClick={() => void changeLocale(lng as AppLocale)}
-                    >
-                      {localeLabel(lng)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {section === 'notifications' && (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                {t('notificationsComingSoon')}
-              </div>
-            )}
-            {section === 'about' && (
-              <div className="space-y-5 text-sm">
-                <div>
-                  <div className="mb-1 text-sm text-muted-foreground">{t('aboutVersion')}</div>
-                  <div>Linkbase v{pkg.version}</div>
-                </div>
-                <div>
-                  <div className="mb-1 text-sm text-muted-foreground">BlockNote</div>
+      <DialogContent className="overflow-hidden p-0 md:max-h-[540px] md:max-w-[700px] lg:max-w-[860px]">
+        <DialogTitle className="sr-only">{t('settings')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('searchPlaceholder')}</DialogDescription>
+        <SidebarProvider className="items-start">
+          <Sidebar collapsible="none" className="hidden md:flex">
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {sections.map(({ id, label, icon: Icon }) => (
+                      <SidebarMenuItem key={id}>
+                        <SidebarMenuButton isActive={section === id} onClick={() => setSection(id)}>
+                          <Icon />
+                          <span>{label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+          <main className="flex h-[490px] flex-1 flex-col overflow-hidden">
+            <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>{t('settings')}</BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>
+                      {sections.find((sec) => sec.id === section)?.label}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </header>
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+              {section === 'account' && (
+                <div className="space-y-5">
                   <div>
-                    v{pkg.dependencies['@blocknote/core']} ·{' '}
-                    <a
-                      href="https://www.blocknotejs.org/docs"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      blocknotejs.org/docs
-                    </a>
+                    <div className="mb-2 text-sm text-muted-foreground">{t('settingsEmail')}</div>
+                    <div className="truncate text-sm">{email || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="mb-2 text-sm text-muted-foreground">{t('settingsName')}</div>
+                    <div className="flex items-center gap-2">
+                      <Input value={draft} onChange={(e) => setDraft(e.target.value)} />
+                      <Button
+                        size="sm"
+                        disabled={!draft.trim() || draft === name}
+                        onClick={() => void save()}
+                      >
+                        {tc('save')}
+                      </Button>
+                      {saved && (
+                        <span className="text-sm text-muted-foreground">{t('nameSaved')}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
+              )}
+              {section === 'theme' && (
+                <div>
+                  <div className="mb-2 text-sm text-muted-foreground">{t('settingsTheme')}</div>
+                  <div className="flex gap-1">
+                    {themeOptions.map(({ value, label, icon: Icon }) => (
+                      <Button
+                        key={value}
+                        variant="outline"
+                        size="sm"
+                        aria-pressed={theme === value}
+                        className={cn(
+                          'flex-1 gap-1.5',
+                          theme === value && 'border-primary bg-accent text-accent-foreground',
+                        )}
+                        onClick={() => {
+                          setTheme(value);
+                          setThemePref(value);
+                        }}
+                      >
+                        <Icon className="size-3.5" />
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {section === 'preferences' && (
+                <div>
+                  <div className="mb-2 text-sm text-muted-foreground">{tc('language')}</div>
+                  <div className="flex gap-1">
+                    {supportedLocales.map((lng) => (
+                      <Button
+                        key={lng}
+                        variant="outline"
+                        size="sm"
+                        aria-pressed={i18n.resolvedLanguage === lng}
+                        className={cn(
+                          'flex-1',
+                          i18n.resolvedLanguage === lng &&
+                            'border-primary bg-accent text-accent-foreground',
+                        )}
+                        onClick={() => void changeLocale(lng as AppLocale)}
+                      >
+                        {localeLabel(lng)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {section === 'notifications' && (
+                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                  {t('notificationsComingSoon')}
+                </div>
+              )}
+              {section === 'about' && (
+                <div className="space-y-5 text-sm">
+                  <div>
+                    <div className="mb-1 text-sm text-muted-foreground">{t('aboutVersion')}</div>
+                    <div>Linkbase v{pkg.version}</div>
+                  </div>
+                  <div>
+                    <div className="mb-1 text-sm text-muted-foreground">BlockNote</div>
+                    <div>
+                      v{pkg.dependencies['@blocknote/core']} ·{' '}
+                      <a
+                        href="https://www.blocknotejs.org/docs"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        blocknotejs.org/docs
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </main>
+        </SidebarProvider>
       </DialogContent>
     </Dialog>
   );
 }
 
-/** 标签聚合视图（T1.5，P0-7）：建标签 / 改色改名 / 删除 / 展开看打标页面 */
 export function TagsDialog({
   wsId,
   open,
