@@ -49,7 +49,7 @@ export async function register(
       userId,
       role: 'owner',
     });
-    // 快速开始页：内容为空 doc，客户端打开时本地初始化块树（05 §10）
+    // 快速开始页：无内容（GET /doc 404），编辑器空文档起（05 §2）
     await tx.insert(pages).values({
       id: Bun.randomUUIDv7(),
       workspaceId,

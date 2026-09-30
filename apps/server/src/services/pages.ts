@@ -1,9 +1,8 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
-import { favorites, pageSnapshots, pageVisits, pages } from '@linkbase/database';
+import { favorites, pageVisits, pages } from '@linkbase/database';
 import { badRequest, notFound } from '../lib/errors';
 import type { AppDeps } from '../types';
 import type { CreatePageInput, MovePageInput, PageMeta, PageTreeNode } from '@linkbase/contracts';
-import { pageState } from './docs';
 
 type PageRow = typeof pages.$inferSelect;
 
@@ -58,24 +57,14 @@ async function getWsPage(deps: AppDeps, wsId: string, pageId: string): Promise<P
 export async function createPage(deps: AppDeps, userId: string, wsId: string, input: CreatePageInput): Promise<PageMeta> {
   if (input.templateId) {
     const tpl = await getWsPage(deps, wsId, input.templateId);
-    const state = await pageState(deps, tpl.id);
     const pageId = Bun.randomUUIDv7();
-    await deps.db.transaction(async (tx) => {
-      await tx.insert(pages).values({
-        id: pageId,
-        workspaceId: wsId,
-        title: input.title ?? tpl.title,
-        icon: input.icon ?? tpl.icon ?? null,
-        createdBy: userId,
-      });
-      if (state && state.state.byteLength > 0) {
-        await tx.insert(pageSnapshots).values({
-          pageId,
-          version: 1,
-          blob: state.state,
-          reason: 'copy',
-        });
-      }
+    await deps.db.insert(pages).values({
+      id: pageId,
+      workspaceId: wsId,
+      title: input.title ?? tpl.title,
+      icon: input.icon ?? tpl.icon ?? null,
+      content: tpl.content,
+      createdBy: userId,
     });
     const created = await getWsPage(deps, wsId, pageId);
     return toMeta(created);
@@ -103,7 +92,7 @@ export async function getPageMeta(deps: AppDeps, wsId: string, pageId: string): 
   return toMeta(page);
 }
 
-/** title/icon 乐观回填（10 §4）；真相仍以 Y.Doc 提取为准（08 §3.3） */
+/** title/icon 乐观回填（10 §4）；title 真相即本列（08 §3.3） */
 export async function patchPage(
   deps: AppDeps,
   wsId: string,

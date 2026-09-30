@@ -21,7 +21,9 @@ export function blobRoutes(deps: AppDeps) {
     return c.json(out, 201);
   });
 
-  app.get('/blobs/:id', requireAuth(deps), async (c) => {
+  // GET 免鉴权：id 为 sha256 前 32 hex（128-bit 不可猜），<img> 无法带 Bearer 头；
+  // 代价 = 凭 URL 可读单张图（类似 Notion/Drive 公链语义，10 §5.3）；写删仍鉴权
+  app.get('/blobs/:id', async (c) => {
     const blob = await blobsService.getBlob(deps, c.req.param('id')!);
     if (!blob) throw notFound('blob not found');
     c.header('Content-Type', blob.mime);

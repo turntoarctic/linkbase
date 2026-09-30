@@ -5,7 +5,6 @@
  */
 import { beforeAll, describe, expect, test } from 'bun:test';
 import { createDb } from '@linkbase/database';
-import { Y, encodeStateAsUpdate, encodeStateVector, toBase64, diffUpdate } from '@linkbase/ydoc';
 import { createApp } from './app';
 import { createMemoryKV } from './db/redis';
 import { createLogger } from './lib/logger';
@@ -157,11 +156,11 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     expect(purge.status).toBe(204);
   });
 
-  test('T0.5 doc 通路：空页 404 → push → pull 差分', async () => {
+  test('T0.5 doc 通路：空页 404 → PUT → GET 回读', async () => {
     const app = createApp(ctx.deps);
     const auth = { Authorization: `Bearer ${ctx.accessToken}` };
 
-    // 空页（无快照无 updates）→ 404 LB_PAGE_NOT_FOUND
+    // 空页（无 content）→ 404 LB_PAGE_NOT_FOUND
     const empty = await app.request(
       `/api/workspaces/${ctx.wsId}/pages/${ctx.quickStartPageId}/doc`,
       { headers: auth },
@@ -170,51 +169,35 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     const emptyBody = (await empty.json()) as { error: { code: string } };
     expect(emptyBody.error.code).toBe('LB_PAGE_NOT_FOUND');
 
-    // 构造两轮 yjs 更新（模拟客户端第一轮已同步、第二轮待拉取）
-    const doc = new Y.Doc();
-    doc.getMap('blocks').set('a', new Y.Map());
-    const sv1 = encodeStateVector(doc);
-    const state1 = encodeStateAsUpdate(doc);
-    doc.getMap('blocks').set('b', new Y.Map());
-    const state2 = encodeStateAsUpdate(doc);
-
-    // push（POST 二进制 update，模拟客户端推增量：state2 相对 state1 的差分）
-    const delta = diffUpdate(state2, sv1);
-    const push = await app.request(
+    // PUT BlockNote 文档（块数组）→ 204
+    const content = [{ id: 'b1', type: 'paragraph', props: {}, content: [{ type: 'text', text: '第一段', styles: {} }] }];
+    const put = await app.request(
       `/api/workspaces/${ctx.wsId}/pages/${ctx.quickStartPageId}/doc`,
-      { method: 'POST', headers: auth, body: delta.buffer.slice(delta.byteOffset, delta.byteOffset + delta.byteLength) as ArrayBuffer },
+      { method: 'PUT', headers: { ...auth, 'content-type': 'application/json' }, body: JSON.stringify(content) },
     );
-    expect(push.status).toBe(204);
+    expect(put.status).toBe(204);
 
-    // pull（带第一轮 state vector → 应取回差分）
-    const pull = await app.request(
-      `/api/workspaces/${ctx.wsId}/pages/${ctx.quickStartPageId}/doc?state=${encodeURIComponent(toBase64(sv1))}`,
+    // GET 回读一致
+    const get = await app.request(
+      `/api/workspaces/${ctx.wsId}/pages/${ctx.quickStartPageId}/doc`,
       { headers: auth },
     );
-    expect(pull.status).toBe(200);
-    const diffBytes = new Uint8Array(await pull.arrayBuffer());
-    expect(diffBytes.byteLength).toBeGreaterThan(0);
+    expect(get.status).toBe(200);
+    expect(await get.json()).toEqual(content);
 
-    // 客户端应用差分后与服务器状态一致
-    const client = new Y.Doc();
-    Y.applyUpdate(client, state1);
-    Y.applyUpdate(client, diffBytes);
-    expect(client.getMap('blocks').size).toBe(2);
-
-    // 超限 update → 413
-    const tooBig = new ArrayBuffer(512 * 1024 + 1);
-    const oversize = await app.request(
+    // 非法载荷 → 400（zod 校验）
+    const bad = await app.request(
       `/api/workspaces/${ctx.wsId}/pages/${ctx.quickStartPageId}/doc`,
-      { method: 'POST', headers: auth, body: tooBig },
+      { method: 'PUT', headers: { ...auth, 'content-type': 'application/json' }, body: JSON.stringify({ nope: 1 }) },
     );
-    expect(oversize.status).toBe(413);
+    expect(bad.status).toBe(400);
   });
 
-  test('T0.5 派生缓存：push 后 title 异步对齐（08 §5）', async () => {
+  test('T0.5 派生缓存：PUT 后 text 异步对齐可搜（08 §5）', async () => {
     const app = createApp(ctx.deps);
     const auth = { Authorization: `Bearer ${ctx.accessToken}` };
 
-    // 建新页并推送带标题的 doc 状态
+    // 建新页并写入含文本块的文档（title 不从内容派生，PATCH 是唯一入口）
     const create = await app.request(`/api/workspaces/${ctx.wsId}/pages`, {
       method: 'POST',
       headers: { ...auth, 'content-type': 'application/json' },
@@ -222,27 +205,27 @@ describe.skipIf(!HAS_DB)('Phase 0 API 全链路（T0.5/T0.6/T0.7）', () => {
     });
     const page = (await create.json()) as { id: string };
 
-    const doc = new Y.Doc();
-    const blocks = doc.getMap('blocks');
-    const pageBlock = blocks.set('root', new Y.Map()) as Y.Map<unknown>;
-    pageBlock.set('sys:id', 'root');
-    pageBlock.set('sys:flavour', 'affine:page');
-    pageBlock.set('prop:title', new Y.Text('提取的标题'));
     await app.request(`/api/workspaces/${ctx.wsId}/pages/${page.id}/doc`, {
-      method: 'POST',
-      headers: auth,
-      body: encodeStateAsUpdate(doc).buffer.slice(0) as ArrayBuffer,
+      method: 'PUT',
+      headers: { ...auth, 'content-type': 'application/json' },
+      body: JSON.stringify([
+        { id: 'h1', type: 'heading', props: { level: 1 }, content: [{ type: 'text', text: '提取的标题', styles: {} }] },
+        { id: 'p1', type: 'paragraph', props: {}, content: [{ type: 'text', text: '正文一段', styles: {} }] },
+      ]),
     });
 
-    // 异步对齐轮询（08 §4.2：不阻塞写路径）
-    let title = '';
-    for (let i = 0; i < 40 && !title; i++) {
+    // 异步对齐轮询（08 §4.2：不阻塞写路径）；搜索走 text 列
+    let hit = '';
+    for (let i = 0; i < 40 && !hit; i++) {
       await new Promise((r) => setTimeout(r, 100));
-      const meta = await app.request(`/api/workspaces/${ctx.wsId}/pages/${page.id}`, { headers: auth });
-      const body = (await meta.json()) as { title: string };
-      title = body.title;
+      const hits = await app.request(
+        `/api/workspaces/${ctx.wsId}/search?q=${encodeURIComponent('正文一段')}`,
+        { headers: auth },
+      );
+      const body = (await hits.json()) as { id: string }[];
+      if (body.some((r) => r.id === page.id)) hit = 'ok';
     }
-    expect(title).toBe('提取的标题');
+    expect(hit).toBe('ok');
   });
 
   test('鉴权与成员校验：401/403', async () => {

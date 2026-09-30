@@ -12,7 +12,6 @@ export const createPageSchema = z.object({
 });
 export type CreatePageInput = z.infer<typeof createPageSchema>;
 
-/** title 仅作乐观展示回填；真相以 Y.Doc 提取为准（10 §4 注意） */
 export const patchPageSchema = z.object({
   title: z.string().max(255).optional(),
   icon: pageIconSchema.nullable().optional(),
@@ -24,6 +23,18 @@ export const movePageSchema = z.object({
   afterId: z.uuid().nullable().optional(),
 });
 export type MovePageInput = z.infer<typeof movePageSchema>;
+
+// ---- 文档内容（BlockNote，05 §4）----
+
+/** BlockNote 块：type + props/content/children（形状由 schema 自决，宽松透传） */
+export const docBlockSchema = z.looseObject({
+  id: z.string().max(64).optional(),
+  type: z.string().max(32),
+});
+
+/** 10 §5.2：GET/PUT /doc 载荷（BlockNote 文档 = 块数组，05 §2） */
+export const docContentSchema = z.array(docBlockSchema).max(2000);
+export type DocContent = z.infer<typeof docContentSchema>;
 
 // ---- 响应 ----
 

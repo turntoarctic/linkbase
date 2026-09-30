@@ -6,7 +6,6 @@
     "@hono/zod-validator": "catalog:",
     "@linkbase/contracts": "workspace:*",
     "@linkbase/database": "workspace:*",
-    "@linkbase/ydoc": "workspace:*",
     "drizzle-orm": "catalog:",
     "hono": "catalog:",
     "pino": "catalog:",

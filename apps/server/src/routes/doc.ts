@@ -1,36 +1,34 @@
 import { Hono } from 'hono';
 import type { AppDeps, AppState } from '../types';
 import { requireAuth, requireMember } from '../middleware/auth';
+import { docContentSchema } from '@linkbase/contracts';
+import { zValidator } from '@hono/zod-validator';
 import * as docsService from '../services/docs';
 
 /**
- * 10 §5.2 Y.Doc 增量（二进制，octet-stream）。
- * 大小限制：pull 的 state 参数走 query；push ≤512KB（docs service 校验），
- * Bun.serve.maxRequestBodySize 30MB 兜底（07 §3）。
+ * 10 §5.2 文档内容（BlockNote JSON，块数组）。
+ * GET：无内容 404（LB_PAGE_NOT_FOUND）；PUT：整体覆盖，≤1MB（docs service 校验）。
  */
 export function docRoutes(deps: AppDeps) {
   const app = new Hono<AppState>();
 
   app.use('/:wsId/pages/:pageId/doc', requireAuth(deps), requireMember(deps));
 
-  // pull：?state={base64 state vector} → 差异 update 字节；空页 404（08 §4.1）
   app.get('/:wsId/pages/:pageId/doc', async (c) => {
     const pageId = c.req.param('pageId');
-    const state = c.req.query('state');
-    const diff = await docsService.pullDoc(deps, pageId, state || undefined);
-    c.header('Content-Type', 'application/octet-stream');
-    return c.body(Buffer.from(diff));
+    return c.json(await docsService.getDoc(deps, pageId));
   });
 
-  // push：body = update 字节 → 204（08 §4.2，写路径只落增量）
-  app.post('/:wsId/pages/:pageId/doc', async (c) => {
-    const userId = c.get('userId');
-    const wsId = c.get('wsId');
-    const pageId = c.req.param('pageId');
-    const body = await c.req.arrayBuffer();
-    await docsService.pushDoc(deps, userId, wsId, pageId, body);
-    return c.body(null, 204);
-  });
+  app.put(
+    '/:wsId/pages/:pageId/doc',
+    zValidator('json', docContentSchema),
+    async (c) => {
+      const content = c.req.valid('json');
+      // 紧凑序列化 ≤ 原始报文长度，作 1MB 粗守卫足够
+      await docsService.putDoc(deps, c.get('wsId'), c.req.param('pageId')!, content, JSON.stringify(content).length);
+      return c.body(null, 204);
+    },
+  );
 
   return app;
 }

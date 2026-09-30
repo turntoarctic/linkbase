@@ -5,14 +5,13 @@
  */
 import { sql } from 'drizzle-orm';
 import {
-  bigint,
-  bigserial,
   boolean,
   check,
   customType,
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   smallint,
@@ -89,8 +88,10 @@ export const pages = pgTable(
     workspaceId: uuid('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    /** 派生缓存：服务端从 Y.Doc 提取（08 §5） */
+    /** 派生缓存：title 由 PATCH 唯一写入；text 由服务端从 content JSON 提取（08 §5） */
     title: text('title').notNull().default(''),
+    /** 文档内容真相：BlockNote 块数组（05 §4） */
+    content: jsonb('content'),
     icon: text('icon'),
     isTrash: boolean('is_trash').notNull().default(false),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -120,47 +121,7 @@ export const pages = pgTable(
   ],
 );
 
-// ---- 3.4 page_updates / page_snapshots ----
-
-export const pageUpdates = pgTable(
-  'page_updates',
-  {
-    /** 全局顺序 seq */
-    id: bigserial('id', { mode: 'number' }).primaryKey(),
-    pageId: uuid('page_id')
-      .notNull()
-      .references(() => pages.id, { onDelete: 'cascade' }),
-    blob: bytea('blob').notNull(),
-    actor: uuid('actor')
-      .notNull()
-      .references(() => users.id),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [index('idx_updates_page').on(t.pageId, t.id)],
-);
-
-export const pageSnapshots = pgTable(
-  'page_snapshots',
-  {
-    id: bigserial('id', { mode: 'number' }).primaryKey(),
-    pageId: uuid('page_id')
-      .notNull()
-      .references(() => pages.id, { onDelete: 'cascade' }),
-    version: integer('version').notNull(),
-    blob: bytea('blob').notNull(),
-    reason: text('reason').notNull().default('auto'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    unique('page_snapshots_page_version_key').on(t.pageId, t.version),
-    check(
-      'snapshots_reason_check',
-      sql`${t.reason} in ('auto','manual','restore','copy')`,
-    ),
-  ],
-);
-
-// ---- 3.5 其余表 ----
+// ---- 3.4 blobs ----
 
 export const blobs = pgTable('blobs', {
   /** 内容寻址（sha256 前 32 hex） */
