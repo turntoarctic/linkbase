@@ -711,7 +711,7 @@ export function AppShell() {
             <div className="p-8 text-sm text-destructive">{error}</div>
           ) : selected && wsId && docData ? (
             <div
-              className="mx-auto h-full px-8 pb-24"
+              className="mx-auto h-full"
               style={{ maxWidth: 'var(--width-content)' }}
             >
               <Suspense fallback={null}>
