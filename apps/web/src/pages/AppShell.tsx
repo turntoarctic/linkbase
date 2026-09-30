@@ -3,8 +3,7 @@ import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import type { PageMeta, PageTreeNode } from '@linkbase/contracts';
-import type { Store } from '@blocksuite/store';
-import { Text } from '@blocksuite/store';
+import type { EditorBlock } from '@/features/editor/schema';
 import { ChevronDown, ChevronRight, LogOut, MoreHorizontal, Pencil, Plus, Search, Settings, Star, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { api, jsonBody } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -44,8 +43,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { SearchDialog, SettingsDialog, TagsDialog, TrashView } from './SidebarViews';
-import { getCollection, openPageDoc } from '@/features/editor/collection';
 
 // BlockSuite 体量大，懒加载不进首屏包
 const EditorView = lazy(() =>
@@ -140,7 +140,7 @@ function TreeItem({
     } else {
       onMove(node, {
         parentId: node.parentId,
-        afterId: z === 'after' ? node.id : (idx > 0 ? siblings[idx - 1].id : null),
+        afterId: z === 'after' ? node.id : (idx > 0 ? siblings[idx - 1]!.id : null),
       });
     }
   };
@@ -392,25 +392,26 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // 编辑器：每空间一个 DocCollection；选中页 → 打开 doc（服务端 shadow 源后台 pull/push）
-  const collection = useMemo(() => (wsId ? getCollection(wsId) : null), [wsId]);
-  const [store, setStore] = useState<Store | null>(null);
+  // 编辑器：选中页 → GET 文档 JSON（BlockNote 块数组，05 §2）
+  const [docData, setDocData] = useState<EditorBlock[] | null>(null);
   useEffect(() => {
-    if (!collection || !selected || showTrash) {
-      setStore(null);
+    if (!wsId || !selected || showTrash) {
+      setDocData(null);
       return;
     }
     let alive = true;
-    void openPageDoc(collection, selected.id).then((s) => {
-      if (alive) setStore(s);
-      // 服务端派生对齐是异步的：切页后刷新树，标题尽快跟上
-      if (wsId) void loadTree(wsId);
-    });
+    void api<EditorBlock[]>(`/workspaces/${wsId}/pages/${selected.id}/doc`)
+      .then((data) => {
+        if (alive) setDocData(data);
+      })
+      .catch(() => {
+        // 404 = 空页 → 空文档起编辑
+        if (alive) setDocData([]);
+      });
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collection, selected, showTrash]);
+  }, [wsId, selected, showTrash]);
 
   useEffect(() => {
     void (async () => {
@@ -490,14 +491,6 @@ export function AppShell() {
       method: 'PATCH',
       ...jsonBody({ title }),
     });
-    // 真相同步写进 Y.Doc 根块标题（10 §4：服务端以 Y.Doc 提取为准——只改库列会被下一次对齐覆盖回）
-    if (collection) {
-      const s = await openPageDoc(collection, renameNode.id);
-      const root = s.root;
-      if (root && root.props.title.toString() !== title) {
-        s.updateBlock(root, { title: new Text(title) });
-      }
-    }
     setRenameNode(null);
     await loadTree(wsId);
     void loadFavorites(wsId);
@@ -716,21 +709,20 @@ export function AppShell() {
             />
           ) : error ? (
             <div className="p-8 text-sm text-destructive">{error}</div>
-          ) : selected ? (
-            store ? (
-              <div
-                className="mx-auto h-full px-8 pb-24"
-                style={{ maxWidth: 'var(--width-content)' }}
-              >
-                <Suspense fallback={null}>
-                  <EditorView store={store} />
-                </Suspense>
-              </div>
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                {tc('loading')}
-              </div>
-            )
+          ) : selected && wsId && docData ? (
+            <div
+              className="mx-auto h-full px-8 pb-24"
+              style={{ maxWidth: 'var(--width-content)' }}
+            >
+              <Suspense fallback={null}>
+                <EditorView
+                  key={selected.id}
+                  wsId={wsId}
+                  pageId={selected.id}
+                  initialData={docData}
+                />
+              </Suspense>
+            </div>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               {t('selectPage')}

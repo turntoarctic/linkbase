@@ -69,15 +69,6 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** 二进制：Y.Doc 增量（10 §5.2） */
-export async function apiBytes(path: string, init: RequestInit = {}): Promise<Uint8Array | null> {
-  const { accessToken } = useAuthStore.getState();
-  const res = await raw(path, init, accessToken);
-  if (res.status === 404) return null; // 空页 → 客户端以本地为准（08 §4.1）
-  if (!res.ok) throw await toApiError(res);
-  return new Uint8Array(await res.arrayBuffer());
-}
-
 export async function apiVoid(path: string, init: RequestInit = {}): Promise<void> {
   const { accessToken } = useAuthStore.getState();
   let res = await raw(path, init, accessToken);

@@ -139,13 +139,16 @@ body {
 }
 
 /* 编辑器（05 §5）：视口高度链路 + 内容列居中 */
+/* 编辑器（05 §4，BlockNote）：自带 Mantine 样式，只做容器高度与内容列宽度对齐（06 §6 桥接层） */
 .linkbase-editor {
-  height: 100%;
+  min-height: 60vh;
 }
-.linkbase-editor .affine-editor-container {
-  height: 100%;
+.linkbase-editor .bn-container,
+.linkbase-editor .bn-editor {
+  background: var(--background);
+  color: var(--foreground);
 }
-.linkbase-editor .affine-editor-viewport {
-  height: 100%;
-  overflow-y: auto;
+.linkbase-editor .bn-block-outer,
+.linkbase-editor .bn-block-content {
+  max-width: 100%; /* 宽度由外层内容列（--width-content）控制 */
 }
