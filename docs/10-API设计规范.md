@@ -7,8 +7,8 @@
 | 项 | 约定 |
 |----|------|
 | Base | `/api`，版本不进 URL（单体重构前无 v2 需求） |
-| 格式 | JSON（UTF-8）；Yjs 端点为 `application/octet-stream`；blob 上传为 multipart |
-| 认证 | `Authorization: Bearer {accessToken}`（Yjs/doc/WS 相关端点必须携带） |
+| 格式 | JSON（UTF-8）；blob 上传为 multipart |
+| 认证 | `Authorization: Bearer {accessToken}`；例外：`GET /blobs/:id` 免鉴权（05 §5） |
 | 时间 | ISO 8601 UTC（`2026-09-22T08:00:00Z`） |
 | ID | UUID v7 字符串 |
 | 大小 | JSON ≤ 1MB；doc update ≤ 512KB；blob ≤ 25MB |
@@ -64,7 +64,7 @@
 | GET | `/workspaces/:wsId/pages` | 树（非回收站全量）：`[{ id, title, icon, parentId, isTemplate, updatedAt, children[] }]` |
 | POST | `/workspaces/:wsId/pages` | `{ title?, icon?, parentId?, templateId? }` → `201 { id, ... }`（templateId 走复制流程 08 §4.4） |
 | GET | `/workspaces/:wsId/pages/:pageId` | 元数据 |
-| PATCH | `/workspaces/:wsId/pages/:pageId` | `{ icon?, title? }`（title 仅作乐观展示的即时回填；服务端以 Y.Doc 提取为准，见 08 §3.3 注意） |
+| PATCH | `/workspaces/:wsId/pages/:pageId` | `{ icon?, title? }`（title 真相即此列，08 §3.3） |
 | POST | `/workspaces/:wsId/pages/:pageId/move` | `{ parentId?, afterId? }` → `200 meta`（T1.3 拖拽换序/换父；afterId=null = 目标兄弟列表头部；禁止移入自身子树 → 400；排序见 08 §3.3 position） |
 | DELETE | `/workspaces/:wsId/pages/:pageId` | 移入回收站（204） |
 | POST | `/workspaces/:wsId/pages/:pageId/restore` | 恢复（含子树） |
@@ -75,28 +75,28 @@
 | PUT | `/workspaces/:wsId/pages/:pageId/visit` | 记录访问（P1，upsert page_visits） |
 | GET | `/workspaces/:wsId/recents` | 最近访问（P1） |
 
-## 5. 内容同步与附件（BlockSuite 专用，二进制）
+## 5. 文档内容与附件
 
-### 5.1 WS 票据
-
-| Method | Path | 说明 |
-|--------|------|------|
-| POST | `/ws/ticket` | → `201 { ticket, expiresIn: 30 }`（Phase 2，见 09 §2） |
-
-### 5.2 Y.Doc 增量
+### 5.1 文档内容（BlockNote JSON，05 §2）
 
 | Method | Path | 说明 |
 |--------|------|------|
-| GET | `/workspaces/:wsId/pages/:pageId/doc?state={base64}` | 客户端 state vector → 差异 update 字节（`octet-stream`）；无内容时 404（05 §4 pull） |
-| POST | `/workspaces/:wsId/pages/:pageId/doc` | body = update 字节 → `204`（05 §4 push；写路径语义见 08 §4.2） |
+| GET | `/workspaces/:wsId/pages/:pageId/doc` | → `200 [{ id, type, props, content, children }, ...]`（块数组）；无内容 404 `LB_PAGE_NOT_FOUND` |
+| PUT | `/workspaces/:wsId/pages/:pageId/doc` | body = 块数组（contracts 校验）→ `204`；≤1MB 超 413；异步派生 text（08 §4.2） |
 
-### 5.3 Blob 附件
+### 5.2 Blob 附件
 
 | Method | Path | 说明 |
 |--------|------|------|
 | POST | `/workspaces/:wsId/blobs` | multipart `file` → `201 { id, mime, size }` |
-| GET | `/blobs/:id` | 内容（长缓存 `immutable`，内容寻址 id 不变） |
+| GET | `/blobs/:id` | 内容（长缓存 `immutable`，内容寻址 id 不变；**免鉴权**——id 为 128-bit 不可猜，`<img>` 无法带 Bearer 头，05 §5） |
 | DELETE | `/blobs/:id` | 引用计数为 0 才可删（MVP 由清理任务代劳，端点保留给管理） |
+
+### 5.3 WS 票据（Phase 2）
+
+| Method | Path | 说明 |
+|--------|------|------|
+| POST | `/ws/ticket` | → `201 { ticket, expiresIn: 30 }`（见 09 §2；09 已搁置） |
 
 ## 6. 错误码全集
 

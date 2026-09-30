@@ -7,7 +7,7 @@
 ```
 Workspace（工作空间）
    └── Page（页面）× N          ← 树状，通过「子页面块」嵌套
-          └── Block（块）× N    ← 块树存于页面内部（Y.Doc），不是数据库实体
+          └── Block（块）× N    ← 块树存于页面内容 JSON（BlockNote），不是数据库实体
 ```
 
 数据库中真正存在的实体只有：**User、Workspace、Page、Blob（附件）、Tag**。其余一切都是页面内的块，或者页面上的元数据。
@@ -20,16 +20,16 @@ Workspace（工作空间）
 
 ### 1.2 Page
 
-- **唯一的内容容器**。一个页面 = 一个 BlockSuite Doc = 一个 Y.Doc。
+- **唯一的内容容器**。一个页面 = 一份 BlockNote 块树 JSON（`pages.content`，05 §2）。
 - 页面树：页面内插入「子页面块」（child doc block）即形成父子关系；父页面删除进回收站时提示子页面去向（见 §4）。
-- 每个页面在数据库只有一行元数据（id、标题缓存、图标、是否在回收站等），**内容不在行里，在 Y.Doc 里**（updates + 快照，见 08 §4）。
-- 页面有两种展示模式（BlockSuite 原生）：`page`（文档）与 `edgeless`（白板），同一份数据，MVP 以 page 模式为主，edgeless 直接可用不重点打磨。
+- 每个页面在数据库只有一行：元数据（id、标题、图标、是否在回收站等）+ **内容 `content` JSONB 列**（08 §3.3）。
+- MVP 只有文档模式；白板/画布模式无（05 §7）。
 
 ### 1.3 Block
 
-- 块由 BlockSuite 定义与管理（flavor 体系，如 `affine:paragraph`、`affine:code`、`affine:database`），前端与 Y.Doc 内自洽，**服务端不解析块结构**。
+- 块由 BlockNote schema 定义（type 体系，如 `paragraph`、`heading`、`bulletListItem`），`props`/`content` 形状由 schema 自决，**服务端不做结构校验**（contracts 只验骨架，05 §2）；派生提取对未知块跳过。
 - 应用只关心两类块行为：
-  - **子页面块**：影响页面树，服务端需要感知（通过 Y.Doc 元事件提取，见 08 §5）；
+  - （原「子页面块感知」随 BlockSuite 退役：父子关系由树操作端点直接持有）
   - **链接块（linked / synced doc）**：页面间引用的载体，是「引用优于复制」的实现，反向链接由它推导（后期功能）。
 
 ## 2. 组织方式：不用容器，用涌现
@@ -42,13 +42,13 @@ Notion 模式的核心是「结构是长出来的，不是先建好的」：
 | 标签 Tag | 工作空间级标签，可给页面打多个；侧边栏按标签聚合视图 | P0 |
 | 收藏 Favorites | 侧边栏置顶快捷入口 | P0 |
 | 最近访问 Recent | 按访问时间自动记录 | P1 |
-| Database 块 | 表格/看板视图（进阶视图 P1，见 04），行可挂子页面——「项目」「需求池」用它实现。数据完全存于页面 Y.Doc，**无需任何新表** | **P0** |
+| Database 块 | 表格/看板视图（进阶视图 P1，见 04），行可挂子页面——「项目」「需求池」用它实现。**BlockNote 无对应工具**，需自研块或独立实现（P0 里程碑内重评估，91 §4 风险） |
 
 **「项目」「需求」的去向**：不建实体。一个项目 = 一个父页面 + 一个标签（或一个 database 视图，P0）；一篇 PRD = 用 PRD 模板新建的页面。旧模型的relations 全部由链接块取代。
 
 ## 3. 模板系统
 
-模板 = 预置好的块树快照（BlockSuite snapshot JSON），存为特殊页面（`pages.is_template = true`），用户「新建 → 从模板」时把快照复制为新页面。
+模板 = 预置好的页面（`pages.is_template = true`，content JSON），用户「新建 → 从模板」时服务端把 content 复制为新页面（08 §4.3）。
 
 | 模板 | 内容 | 优先级 |
 |------|------|--------|
@@ -66,13 +66,13 @@ Notion 模式的核心是「结构是长出来的，不是先建好的」：
 ### 4.1 页面
 
 ```
-正常 ──删除──▶ 回收站（is_trash=true，Y.Doc 保留）──恢复──▶ 正常
+正常 ──删除──▶ 回收站（is_trash=true，content 保留）──恢复──▶ 正常
                     │
                     └──彻底删除（30 天后自动，或手动）──▶ 物理删除（含 updates/快照/附件引用检查）
 ```
 
 - 回收站内页面不出现在树、搜索、标签视图中。
-- 删除父页面：子页面一并进回收站（父子关系存于块中，随 Y.Doc 一起保留）；恢复时整棵恢复。
+- 删除父页面：子页面一并进回收站（父子关系在 DB 列，随行保留）；恢复时整棵恢复。
 
 ### 4.2 工作空间
 
@@ -83,8 +83,8 @@ Notion 模式的核心是「结构是长出来的，不是先建好的」：
 | 项 | 规则 |
 |----|------|
 | 用户可见 ID | 无。页面没有 PRD-102 这类业务编号，靠标题 + 路径 + 搜索定位（URL 即 `/:workspaceId/page/:pageId`，见 06 §2） |
-| 内部 ID | UUID v7（时间有序，利索引），由服务端生成；块 ID 由 BlockSuite 客户端生成（nanoid） |
-| 标题 | 无标题页面显示 `无标题`；`pages.title` 是服务端提取的缓存列，仅用于列表/搜索，真实标题以 Y.Doc 内 root block 的 `title` 属性为准 |
+| 内部 ID | UUID v7（时间有序，利索引），由服务端生成；块 ID 由 BlockNote 生成 |
+| 标题 | 无标题页面显示 `无标题`；`pages.title` 即标题真相（侧边栏/标题栏改名 PATCH 唯一入口，05 §6） |
 
 ## 6. 与旧模型（archive/03）的字段级去向
 
@@ -92,14 +92,14 @@ Notion 模式的核心是「结构是长出来的，不是先建好的」：
 |-------------|------|
 | Project（key/status/stats） | 标签 + 父页面；stats 不再做 |
 | Requirement（状态机 8 态） | 状态 = Database 块的选择列（P0）；不用 database 的页面可用标签前缀模拟 |
-| Document / DocumentBlock / DocumentVersion | Page + 块树（Y.Doc）+ 快照（08 §4.3） |
+| Document / DocumentBlock / DocumentVersion | Page + 块树 JSON（pages.content）；版本历史 P1 再议（08 §4.4） |
 | relations 表（7 种类型） | 链接块 |
 | FigmaReference / Api / ApiVersion / MockScenario / TestCase 系列 | 后期扩展块，届时单独立文档 |
-| Comment / Mention | 后期：BlockSuite 原生评论能力 + 通知，届时单独立文档 |
+| Comment / Mention | 后期：BlockNote 自定义块/行内内容 + 通知，届时单独立文档 |
 
 ## 7. 待细化
 
 - 链接块的反向链接面板（backlinks）的数据来源与查询方式（倾向服务端从 updates 提取引用表，Phase 2 定）。
 - 页面树拖拽跨工作空间移动（move）是否支持（倾向不支持 MVP）。
 - 模板的版本升级策略（模板更新后已建页面是否受影响——倾向不受影响，模板仅出生时复制）。
-- Database 行与子页面的绑定细节（行升级为子页面 vs 链接已有页面）——Phase 1 实施时以 BlockSuite data-view 实际能力为准回填。
+- Database 行与子页面的绑定细节——Phase 1 立项时按自研 Database 方案回填（04 P0-13 已重评估）。

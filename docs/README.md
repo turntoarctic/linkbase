@@ -8,7 +8,7 @@
 
 | 层 | 选型 |
 |------|------|
-| 编辑器 | **BlockSuite**（Yjs 原生块编辑框架，Web Component 接入）——**本地源码集成**：源码包 vendor 进应用仓库 `packages/blocksuite/`，作为 workspace 本地包直接使用（不装 npm 包），可断点调试、可改，方案见 05 |
+| 编辑器 | **BlockNote**（ProseMirror/TipTap 底座块编辑器，React 组件，JSON 文档，完整形态见 05）——npm 包接入 |
 | 前端 | React 19 + TypeScript + Vite 8 + Tailwind CSS 4 + shadcn/ui（Base UI）+ TanStack Query + react-router + i18next（zh-CN/en，见 13），界面风格对标 Notion；**版本与兼容红线见 06 §1.1**（yjs 单实例优先） |
 | 后端 | **Hono**（运行于 Bun，函数式路由/中间件，无 DI / 无装饰器）+ Zod 校验 |
 | 数据库 | **PostgreSQL 唯一数据库**（Drizzle ORM，`Bun.SQL` 原生驱动），Redis（会话/邀请/票据/限流） |
@@ -32,7 +32,7 @@
 
 | 编号 | 文档 | 内容 |
 |------|------|------|
-| 05 | [BlockSuite 集成设计](05-BlockSuite集成设计.md) | DocCollection、ServerDocSource/BlobSource、编辑器挂载、扩展块路线 |
+| 05 | [BlockNote 集成设计](05-BlockNote集成设计.md) | 完整形态：能力清单（默认块全量+代码高亮/多栏/数学）、schema 组成、挂载与自动保存、派生提取、许可与协作演进 |
 | 06 | [前端架构与 UI 设计](06-前端架构与UI设计.md) | 目录结构、状态管理边界、Notion 风格设计语言（tokens/布局/交互） |
 | 07 | [后端架构](07-后端架构.md) | Hono on Bun 分层、中间件、错误处理、日志、测试 |
 | 08 | [数据模型与存储](08-数据模型与存储.md) | 全部表结构（DDL + Drizzle）、Y.Doc 存储与快照策略、搜索索引 |
